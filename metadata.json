@@ -1,0 +1,13 @@
+{
+  "name": "ShiftMate",
+  "description": "Hệ thống quản lý ca làm việc thông minh với trợ lý AI, quản lý lương và lịch trình thời gian thực.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "AI Assistant",
+    "Shift Management",
+    "Payroll Processing"
+  ]
+}
