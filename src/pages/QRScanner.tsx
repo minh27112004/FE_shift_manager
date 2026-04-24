@@ -21,20 +21,30 @@ export default function QRScanner() {
 
   const navigate = useNavigate();
 
-  // In a real app, this would be a react-qr-reader onResult callback
   const handleScanMock = async (tokenString: string) => {
     if (!tokenString) return;
     setStatus('scanning');
-    
-    // Simulate getting GPS
-    const mockLat = 10.762622;
-    const mockLng = 106.660172;
+
+    let latitude: number;
+    let longitude: number;
+
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 8000 })
+      );
+      latitude = pos.coords.latitude;
+      longitude = pos.coords.longitude;
+    } catch {
+      setStatus('error');
+      setMessage('Không lấy được vị trí GPS. Vui lòng cho phép truy cập vị trí và thử lại.');
+      return;
+    }
 
     try {
       const response = await api.post('/attendance/records/checkin/', {
         token: tokenString,
-        latitude: mockLat,
-        longitude: mockLng
+        latitude,
+        longitude,
       });
       
       setShiftInfo(response.data || { note: 'Check-in thành công' });

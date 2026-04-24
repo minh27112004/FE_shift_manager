@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from '../lib/toast';
 import { motion } from 'motion/react';
 import {
   BadgeCheck,
@@ -252,23 +253,15 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
 function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
   const navigate = useNavigate();
   const [activeAttendance, setActiveAttendance] = useState<any>(null);
-  const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
-  const [loadingAttendance, setLoadingAttendance] = useState(true);
 
-  // Fetch current attendance status and history
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
         const response = await api.get('/attendance/records/me/');
-        const records = response.data;
-        // Backend returns records, find the one without check_out
-        const ongoing = records.find((r: any) => !r.check_out);
-        setActiveAttendance(ongoing);
-        setAttendanceHistory(records.slice(0, 5)); // Keep last 5 records
-      } catch (error) {
-        console.error('Failed to fetch attendance:', error);
-      } finally {
-        setLoadingAttendance(false);
+        const ongoing = response.data.find((r: any) => !r.checkout_at);
+        setActiveAttendance(ongoing ?? null);
+      } catch {
+        // silently fail
       }
     };
     if (user) fetchAttendance();
@@ -278,17 +271,11 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
     if (!activeAttendance) return;
     try {
       if (window.confirm('Bạn có chắc chắn muốn kết thúc ca làm việc này?')) {
-        await api.post('/attendance/records/checkout/', {
-          shift_id: activeAttendance.shift
-        });
+        await api.post('/attendance/records/checkout/', { shift_id: activeAttendance.shift });
         setActiveAttendance(null);
-        // Refresh history
-        const response = await api.get('/attendance/records/me/');
-        setAttendanceHistory(response.data.slice(0, 5));
-        alert('Đã kết thúc ca làm việc thành công!');
       }
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Lỗi khi check-out');
+      toast.error(error.response?.data?.detail || 'Lỗi khi check-out');
     }
   };
 
@@ -299,36 +286,29 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
 
   const upcomingShifts = myShifts.filter(s => new Date(s.date) >= new Date()).slice(0, 3);
 
-  // Calculate total hours from history (simplified)
-  const totalHours = attendanceHistory.reduce((acc, curr) => {
-    if (curr.check_in && curr.check_out) {
-      const duration = (new Date(curr.check_out).getTime() - new Date(curr.check_in).getTime()) / (1000 * 60 * 60);
-      return acc + duration;
-    }
-    return acc;
-  }, 0).toFixed(1);
-  
+  const completedShifts = myShifts.filter(s => new Date(s.date) < new Date()).length;
+
   const stats = [
-    { 
-      label: 'Ca làm sắp tới', 
-      value: upcomingShifts.length.toString(), 
-      trend: 'Trong tuần này', 
-      icon: Clock, 
+    {
+      label: 'Ca làm sắp tới',
+      value: upcomingShifts.length.toString(),
+      trend: 'Trong tuần này',
+      icon: Clock,
       color: 'bg-[#d8e2ff] text-[#005ac2]',
       tag: 'Cá nhân'
     },
-    { 
-      label: 'Số giờ đã làm', 
-      value: totalHours, 
-      trend: 'Tính từ các ca gần nhất', 
-      icon: History, 
+    {
+      label: 'Ca đã hoàn thành',
+      value: completedShifts.toString(),
+      trend: 'Tính đến hôm nay',
+      icon: History,
       color: 'bg-[#d3ceef] text-[#5f5c78]',
       tag: 'Tháng này'
     },
     {
-      label: 'Ca đã hoàn thành',
-      value: attendanceHistory.filter((r: any) => r.check_out).length.toString(),
-      trend: 'Từ lịch sử điểm danh',
+      label: 'Tổng ca đã đăng ký',
+      value: myShifts.length.toString(),
+      trend: 'Ca được xác nhận',
       icon: Wallet,
       color: 'bg-[#e2e2e9] text-[#3e3f45]',
       tag: 'Tháng này'
@@ -422,41 +402,6 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
             </div>
           </div>
 
-          {/* History / Recent Activity */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-extrabold tracking-tight text-slate-900">Hoạt động điểm danh gần đây</h2>
-            </div>
-            <div className="space-y-4">
-              {attendanceHistory.length > 0 ? (
-                attendanceHistory.map((record) => (
-                  <div key={record.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={cn("p-2 rounded-full", record.check_out ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600")}>
-                        {record.check_out ? <CheckCircle2 className="h-4 w-4" /> : <Timer className="h-4 w-4" />}
-                      </div>
-                      <div>
-                        <p className="text-base font-bold text-slate-900">
-                          {record.check_out ? 'Đã hoàn thành ca' : 'Đang làm việc'}
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          {new Date(record.check_in).toLocaleDateString()} · {new Date(record.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          {record.check_out && ` - ${new Date(record.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`}
-                        </p>
-                      </div>
-                    </div>
-                    {record.check_out && (
-                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                        {((new Date(record.check_out).getTime() - new Date(record.check_in).getTime()) / (1000 * 60 * 60)).toFixed(1)} giờ
-                      </span>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-center py-4 text-slate-400 text-sm font-medium">Chưa có lịch sử điểm danh.</p>
-              )}
-            </div>
-          </div>
         </section>
 
         <aside>

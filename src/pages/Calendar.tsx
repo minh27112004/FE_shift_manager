@@ -16,8 +16,17 @@ import {
   AlertTriangle,
   AlarmClock,
   AlertCircle,
-  BadgeDollarSign
+  BadgeDollarSign,
+  QrCode,
+  Copy,
+  CheckCircle2,
+  RefreshCw,
+  Edit3,
+  Trash2,
+  Plus,
+  Save,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '../lib/utils';
 import { useShifts } from '../context/ShiftContext';
 import { useAuth } from '../context/AuthContext';
@@ -96,6 +105,8 @@ export default function CalendarPage() {
   const [createForm, setCreateForm] = useState(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [qrShift, setQrShift] = useState<{ id: number; label: string; time: string; date: string } | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Employee-specific: fetch personal shifts from dedicated endpoint
   const [myShifts, setMyShifts] = useState<ReturnType<typeof transformShift>[]>([]);
@@ -122,7 +133,7 @@ export default function CalendarPage() {
       }
     };
     fetch();
-  // re-fetch whenever global shifts refresh (e.g. after claiming)
+
   }, [role, shifts]);
 
   const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
@@ -138,7 +149,7 @@ export default function CalendarPage() {
   };
   const goToday = () => { setViewYear(now.getFullYear()); setViewMonth(now.getMonth()); };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCreateError('');
     if (createForm.start_time >= createForm.end_time) {
@@ -208,13 +219,22 @@ export default function CalendarPage() {
             </button>
           </div>
           {(role === 'admin' || role === 'manager') && (
-            <button
-              onClick={() => { setCreateForm(EMPTY_FORM); setCreateError(''); setShowCreate(true); }}
-              className="bg-[#005ac2] text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#004fab] active:scale-95 transition-all flex items-center gap-2"
-            >
-              <PlusCircle className="h-5 w-5" />
-              Tạo ca làm
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-50 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <AlarmClock className="h-4 w-4" />
+                Template
+              </button>
+              <button
+                onClick={() => { setCreateForm(EMPTY_FORM); setCreateError(''); setShowCreate(true); }}
+                className="bg-[#005ac2] text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#004fab] active:scale-95 transition-all flex items-center gap-2"
+              >
+                <PlusCircle className="h-5 w-5" />
+                Tạo ca làm
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -276,6 +296,14 @@ export default function CalendarPage() {
                             <CalendarCheck className="h-2.5 w-2.5" /> Của tôi
                           </span>
                         )}
+                        {(role === 'admin' || role === 'manager') && (
+                          <button
+                            onClick={e => { e.stopPropagation(); setQrShift({ id: shift.id, label: shift.label, time: shift.time, date: shift.date }); }}
+                            className="mt-1 flex items-center gap-0.5 text-[9px] font-black text-[#005ac2] hover:text-[#004fab] transition-colors"
+                          >
+                            <QrCode className="h-2.5 w-2.5" /> Tạo QR
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -301,8 +329,18 @@ export default function CalendarPage() {
         )}
       </AnimatePresence>
 
+      {/* Template Manager Modal */}
+      <AnimatePresence>
+        {showTemplates && <TemplateManagerModal onClose={() => setShowTemplates(false)} />}
+      </AnimatePresence>
+
+      {/* QR Modal */}
+      <AnimatePresence>
+        {qrShift && <QRModal shift={qrShift} onClose={() => setQrShift(null)} />}
+      </AnimatePresence>
+
       {/* Legend & Insights */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
           <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
             <Info className="h-4 w-4 text-[#005ac2]" />
@@ -374,23 +412,6 @@ export default function CalendarPage() {
             )}
           </div>
         </div>
-
-        <div className="bg-gradient-to-br from-[#005ac2]/10 to-[#5f5c78]/10 p-6 rounded-xl shadow-sm border border-[#005ac2]/20 relative overflow-hidden">
-          <div className="relative z-10">
-            <h3 className="text-sm font-black text-[#005ac2] mb-2 flex items-center gap-2">
-              <Bot className="h-4 w-4" />
-              GỢI Ý AI
-            </h3>
-            <p className="text-xs font-medium text-slate-600 leading-relaxed">
-              Thứ Năm thường có tỷ lệ nghỉ việc cao hơn 20%. Hãy cân nhắc sắp xếp dư 1 người cho ca đêm.
-            </p>
-            <button className="mt-4 text-xs font-bold text-[#005ac2] flex items-center gap-1 hover:underline">
-              Áp dụng đề xuất
-              <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-          <BarChart3 className="absolute -right-4 -bottom-4 h-24 w-24 text-[#005ac2] opacity-10" />
-        </div>
       </div>
     </motion.div>
   );
@@ -401,7 +422,7 @@ export default function CalendarPage() {
 interface CreateShiftModalProps {
   form: typeof EMPTY_FORM;
   setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
   submitting: boolean;
   error: string;
@@ -410,6 +431,17 @@ interface CreateShiftModalProps {
 function CreateShiftModal({ form, setForm, onSubmit, onClose, submitting, error }: CreateShiftModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const set = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
+  const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
+  const [selectedTplId, setSelectedTplId] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.get('/shifts/templates/').then(r => setTemplates(r.data.filter((t: ShiftTemplate) => t.is_active))).catch(() => {});
+  }, []);
+
+  const applyTemplate = (tpl: ShiftTemplate) => {
+    setSelectedTplId(tpl.id);
+    setForm(f => ({ ...f, start_time: tpl.start_time.slice(0,5), end_time: tpl.end_time.slice(0,5), max_workers: tpl.max_workers, note: tpl.name }));
+  };
 
   return (
     <motion.div
@@ -451,6 +483,42 @@ function CreateShiftModal({ form, setForm, onSubmit, onClose, submitting, error 
               <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
                 <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
                 <p className="text-sm text-red-700 font-medium">{error}</p>
+              </div>
+            )}
+
+            {/* Template picker */}
+            {templates.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <AlarmClock className="h-3.5 w-3.5" /> Chọn template
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {templates.map(tpl => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => applyTemplate(tpl)}
+                      className={cn(
+                        'px-3 py-2 rounded-xl border text-sm font-bold transition-all text-left',
+                        selectedTplId === tpl.id
+                          ? 'border-[#005ac2] bg-[#005ac2]/10 text-[#005ac2]'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-[#005ac2]/40 hover:bg-[#005ac2]/5'
+                      )}
+                    >
+                      <p className="font-black">{tpl.name}</p>
+                      <p className="text-xs opacity-70">{tpl.start_time.slice(0,5)} – {tpl.end_time.slice(0,5)}</p>
+                    </button>
+                  ))}
+                  {selectedTplId !== null && (
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedTplId(null); setForm(f => ({ ...f, start_time: '', end_time: '', max_workers: 1, note: '' })); }}
+                      className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-400 hover:bg-slate-100 transition-colors"
+                    >
+                      Xóa chọn
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -566,7 +634,7 @@ function CreateShiftModal({ form, setForm, onSubmit, onClose, submitting, error 
 
               <button
                 type="button"
-                onClick={() => set('is_emergency', !form.is_emergency)}
+                onClick={() => setForm(f => ({ ...f, is_emergency: !f.is_emergency, salary_multiplier: !f.is_emergency ? '1.5' : '1.00' }))}
                 className={cn(
                   'flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all',
                   form.is_emergency
@@ -641,6 +709,310 @@ function CreateShiftModal({ form, setForm, onSubmit, onClose, submitting, error 
             </button>
           </div>
         </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+const QR_TTL = 120; 
+
+function QRModal({ shift, onClose }: { shift: { id: number; label: string; time: string; date: string }; onClose: () => void }) {
+  const [token, setToken] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  const [countdown, setCountdown] = useState(QR_TTL);
+
+  const generate = async () => {
+    setLoading(true);
+    setError('');
+    setCountdown(QR_TTL);
+    try {
+      const res = await api.post(`/attendance/qr/shift/${shift.id}/generate/`);
+      setToken(res.data.token);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Không thể tạo QR.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-refresh when countdown hits 0
+  useEffect(() => {
+    if (!token) return;
+    if (countdown <= 0) { generate(); return; }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, token]);
+
+  useEffect(() => { generate(); }, []);
+
+  const copyToken = () => {
+    navigator.clipboard.writeText(token);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30, scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div>
+            <h2 className="font-black text-slate-900">Mã QR Check-in</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{shift.label} · {shift.time} · {shift.date}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-6 flex flex-col items-center gap-5">
+          {loading && <Loader2 className="h-8 w-8 text-[#005ac2] animate-spin" />}
+
+          {error && (
+            <div className="w-full flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+              <p className="text-xs text-red-700 font-medium">{error}</p>
+            </div>
+          )}
+
+          {token && !loading && (
+            <>
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <QRCodeSVG value={token} size={200} />
+              </div>
+
+              <p className="text-[10px] text-slate-400 font-medium text-center">
+                QR có hiệu lực <span className="font-black text-slate-600">2 phút</span>. Nhân viên quét hoặc nhập token bên dưới.
+              </p>
+
+              <div className="w-full flex gap-2">
+                <code className="flex-1 bg-slate-100 rounded-xl px-3 py-2 text-xs text-slate-700 font-mono truncate">
+                  {token}
+                </code>
+                <button
+                  onClick={copyToken}
+                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors shrink-0"
+                >
+                  {copied ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+            Tạo QR mới
+          </button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-[#005ac2] text-white text-sm font-black hover:bg-[#004fab] transition-colors">
+            Đóng
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+interface ShiftTemplate {
+  id: number;
+  name: string;
+  start_time: string;
+  end_time: string;
+  min_workers: number;
+  max_workers: number;
+  is_active: boolean;
+  store: number;
+}
+
+const EMPTY_TPL = { name: '', start_time: '', end_time: '', min_workers: 1, max_workers: 3, is_active: true };
+
+function TemplateManagerModal({ onClose }: { onClose: () => void }) {
+  const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<number | 'new' | null>(null);
+  const [form, setForm] = useState<typeof EMPTY_TPL>(EMPTY_TPL);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchTemplates = () => {
+    setLoading(true);
+    api.get('/shifts/templates/')
+      .then(r => setTemplates(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchTemplates(); }, []);
+
+  const startEdit = (tpl: ShiftTemplate) => {
+    setEditingId(tpl.id);
+    setForm({ name: tpl.name, start_time: tpl.start_time.slice(0,5), end_time: tpl.end_time.slice(0,5), min_workers: tpl.min_workers, max_workers: tpl.max_workers, is_active: tpl.is_active });
+    setError('');
+  };
+
+  const startNew = () => {
+    setEditingId('new');
+    setForm(EMPTY_TPL);
+    setError('');
+  };
+
+  const cancelEdit = () => { setEditingId(null); setError(''); };
+
+  const handleSave = async () => {
+    if (!form.name || !form.start_time || !form.end_time) { setError('Vui lòng điền đầy đủ thông tin.'); return; }
+    if (form.start_time >= form.end_time) { setError('Giờ kết thúc phải sau giờ bắt đầu.'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      if (editingId === 'new') {
+        await api.post('/shifts/templates/', { ...form, store: 1 });
+      } else {
+        await api.patch(`/shifts/templates/${editingId}/`, form);
+      }
+      setEditingId(null);
+      fetchTemplates();
+    } catch (err: any) {
+      const data = err.response?.data;
+      setError(data ? Object.values(data).flat().join(', ') : 'Lưu thất bại.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Xóa template này?')) return;
+    try {
+      await api.delete(`/shifts/templates/${id}/`);
+      fetchTemplates();
+    } catch {}
+  };
+
+  const inputCls = 'w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-[#005ac2]/20 focus:border-[#005ac2]/40 focus:outline-none placeholder:text-slate-400';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30, scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 shrink-0">
+          <div>
+            <h2 className="font-black text-slate-900">Quản lý template ca làm</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Chọn template để điền nhanh khi tạo ca mới</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={startNew} className="flex items-center gap-1.5 px-3 py-2 bg-[#005ac2] text-white text-base font-black rounded-xl hover:bg-[#004fab] transition-colors">
+              <Plus className="h-4 w-4" /> Thêm mới
+            </button>
+            <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+          {/* New / Edit form */}
+          <AnimatePresence>
+            {editingId !== null && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-3 overflow-hidden"
+              >
+                <p className="text-xs font-black text-slate-500 uppercase tracking-wider">
+                  {editingId === 'new' ? 'Tạo template mới' : 'Chỉnh sửa template'}
+                </p>
+                {error && <p className="text-xs text-red-500 font-medium flex items-center gap-1"><AlertCircle className="h-3 w-3" />{error}</p>}
+                <input className={inputCls} placeholder="Tên template (vd: Ca sáng)" value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Giờ bắt đầu</label>
+                    <input type="time" className={inputCls + ' mt-1'} value={form.start_time} onChange={e => setForm(f => ({...f, start_time: e.target.value}))} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Giờ kết thúc</label>
+                    <input type="time" className={inputCls + ' mt-1'} value={form.end_time} onChange={e => setForm(f => ({...f, end_time: e.target.value}))} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Tối thiểu NV</label>
+                    <input type="number" min={1} className={inputCls + ' mt-1'} value={form.min_workers} onChange={e => setForm(f => ({...f, min_workers: +e.target.value}))} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Tối đa NV</label>
+                    <input type="number" min={1} className={inputCls + ' mt-1'} value={form.max_workers} onChange={e => setForm(f => ({...f, max_workers: +e.target.value}))} />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={cancelEdit} className="flex-1 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Hủy</button>
+                  <button onClick={handleSave} disabled={saving} className="flex-1 py-2 rounded-xl bg-[#005ac2] text-white text-sm font-black hover:bg-[#004fab] transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Lưu
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Template list */}
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 text-[#005ac2] animate-spin" /></div>
+          ) : templates.length === 0 ? (
+            <div className="text-center py-10 text-slate-400">
+              <AlarmClock className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+              <p className="text-sm font-bold">Chưa có template nào</p>
+            </div>
+          ) : (
+            templates.map(tpl => (
+              <div key={tpl.id} className={cn('flex items-center justify-between p-4 rounded-2xl border transition-colors', tpl.is_active ? 'bg-white border-slate-100 hover:border-[#005ac2]/30' : 'bg-slate-50 border-slate-100 opacity-50')}>
+                <div className="flex-1 text-left">
+                  <p className="font-black text-slate-900 text-base">{tpl.name}</p>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    {tpl.start_time.slice(0,5)} – {tpl.end_time.slice(0,5)} · {tpl.min_workers}–{tpl.max_workers} nhân viên
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 ml-3 shrink-0">
+                  <button onClick={() => startEdit(tpl)} className="p-1.5 rounded-lg text-slate-400 hover:text-[#005ac2] hover:bg-blue-50 transition-colors">
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );

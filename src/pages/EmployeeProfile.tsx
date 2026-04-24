@@ -1,24 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Shield, 
-  Award, 
-  Clock, 
-  Star,
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Shield,
+  Clock,
   Edit3,
   Camera,
   CheckCircle2,
-  AlertCircle
+  AlertTriangle,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
+import { toast } from '../lib/toast';
 
 export default function EmployeeProfile() {
   const { id } = useParams();
@@ -26,7 +28,7 @@ export default function EmployeeProfile() {
   const [employee, setEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({ phone: '', address: '', first_name: '', last_name: '' });
+  const [formData, setFormData] = useState({ full_name: '', email: '', address: '' });
 
   const fetchEmployee = async () => {
     setLoading(true);
@@ -35,10 +37,9 @@ export default function EmployeeProfile() {
         const response = await api.get('/me/');
         setEmployee(response.data);
         setFormData({
-          phone: response.data.phone || '',
-          address: response.data.address || '',
-          first_name: response.data.first_name || '',
-          last_name: response.data.last_name || ''
+          full_name: response.data.full_name || '',
+          email: response.data.email || '',
+          address: response.data.profile?.address || '',
         });
       } else {
         const response = await api.get(`/employees/${id}/`);
@@ -58,25 +59,18 @@ export default function EmployeeProfile() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.patch('/me/', formData);
+      await api.patch('/me/', { full_name: formData.full_name, email: formData.email, profile: { address: formData.address } });
       setIsEditing(false);
       await fetchEmployee();
-      alert('Cập nhật hồ sơ thành công!');
+      toast.success('Cập nhật hồ sơ thành công!');
     } catch (error: any) {
-      alert('Cập nhật thất bại: ' + (error.response?.data?.detail || 'Lỗi hệ thống'));
+      toast.error('Cập nhật thất bại: ' + (error.response?.data?.detail || 'Lỗi hệ thống'));
     }
   };
 
-  const startDate = employee?.profile?.start_date;
-  const tenureYears = startDate
-    ? ((Date.now() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24 * 365)).toFixed(1)
-    : null;
-
   const stats = [
-    { label: 'Ngày bắt đầu', value: startDate ? new Date(startDate).toLocaleDateString('vi-VN') : '—', icon: CheckCircle2, color: 'text-green-600' },
     { label: 'Lương/giờ', value: employee?.profile?.hourly_rate ? `${Number(employee.profile.hourly_rate).toLocaleString('vi-VN')}đ` : '—', icon: Clock, color: 'text-blue-600' },
-    { label: 'Thâm niên', value: tenureYears ? `${tenureYears} năm` : '—', icon: Award, color: 'text-purple-600' },
-    { label: 'Trạng thái', value: employee?.is_active ? 'Đang làm' : 'Đã nghỉ', icon: Star, color: employee?.is_active ? 'text-green-600' : 'text-red-500' },
+    { label: 'Trạng thái', value: 'Đang làm việc', icon: CheckCircle2, color: 'text-green-600' },
   ];
 
   if (loading) {
@@ -114,7 +108,6 @@ export default function EmployeeProfile() {
                 <span className="px-3 py-1 bg-[#d8e2ff] text-[#005ac2] text-[10px] font-black rounded-full uppercase tracking-widest">
                   {employee.role || 'Nhân viên chính thức'}
                 </span>
-                <span className="text-sm font-bold text-slate-500">ID: EMP-{employee.id || 'N/A'}</span>
               </div>
             </div>
           </div>
@@ -139,40 +132,31 @@ export default function EmployeeProfile() {
           >
             <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6">Cập nhật thông tin</h2>
             <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Họ</label>
-                <input 
-                  type="text" 
-                  value={formData.first_name} 
-                  onChange={e => setFormData({...formData, first_name: e.target.value})}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none" 
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Họ và tên</label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={e => setFormData({...formData, full_name: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tên</label>
-                <input 
-                  type="text" 
-                  value={formData.last_name} 
-                  onChange={e => setFormData({...formData, last_name: e.target.value})}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none" 
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Số điện thoại</label>
-                <input 
-                  type="text" 
-                  value={formData.phone} 
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none" 
-                />
-              </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Địa chỉ</label>
-                <input 
-                  type="text" 
-                  value={formData.address} 
+                <input
+                  type="text"
+                  value={formData.address}
                   onChange={e => setFormData({...formData, address: e.target.value})}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none" 
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
               <div className="md:col-span-2 flex justify-end">
@@ -298,7 +282,173 @@ export default function EmployeeProfile() {
             )}
           </div>
         </div>
+
+        {/* Tính công */}
+        {(!id || id === 'me') && <AttendanceSection />}
       </div>
     </motion.div>
+  );
+}
+
+interface AttendanceRecord {
+  id: number;
+  shift_date: string;
+  shift_start: string;
+  shift_end: string;
+  store_name: string;
+  checkin_at: string | null;
+  checkout_at: string | null;
+  worked_minutes: number | null;
+  is_late: boolean;
+  late_minutes: number;
+}
+
+function AttendanceSection() {
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const from = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const to = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+    setLoading(true);
+    setError('');
+    api.get(`/attendance/records/me/?from=${from}&to=${to}`)
+      .then(r => setRecords(r.data))
+      .catch(err => {
+        setRecords([]);
+        setError(err.response?.data?.detail || 'Không thể tải dữ liệu chấm công.');
+      })
+      .finally(() => setLoading(false));
+  }, [year, month]);
+
+  const prevMonth = () => {
+    if (month === 1) { setMonth(12); setYear(y => y - 1); }
+    else setMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (month === 12) { setMonth(1); setYear(y => y + 1); }
+    else setMonth(m => m + 1);
+  };
+  const isNextDisabled = year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth() + 1);
+
+  const totalShifts = records.length;
+  const totalMinutes = records.reduce((s, r) => s + (r.worked_minutes ?? 0), 0);
+  const totalHours = (totalMinutes / 60).toFixed(1);
+  const lateCount = records.filter(r => r.is_late).length;
+  const totalLateMinutes = records.reduce((s, r) => s + (r.late_minutes ?? 0), 0);
+
+  const fmt = (iso: string | null) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const summary = [
+    { label: 'Số ca làm', value: `${totalShifts} ca`, icon: Calendar, color: 'bg-blue-50 text-blue-600' },
+    { label: 'Tổng giờ làm', value: `${totalHours}h`, icon: Clock, color: 'bg-green-50 text-green-600' },
+    { label: 'Số ca đi muộn', value: `${lateCount} ca`, icon: AlertTriangle, color: lateCount > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400' },
+    { label: 'Tổng phút muộn', value: `${totalLateMinutes} phút`, icon: Clock, color: totalLateMinutes > 0 ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-400' },
+  ];
+
+  return (
+    <div className="mt-10">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Bảng tính công</h2>
+        <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-2xl px-3 py-2 shadow-sm">
+          <button onClick={prevMonth} className="p-1 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-black text-slate-700 min-w-[90px] text-center">
+            Tháng {month}/{year}
+          </span>
+          <button onClick={nextMonth} disabled={isNextDisabled} className="p-1 rounded-lg hover:bg-slate-100 transition-colors text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {summary.map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+            <div className={cn('h-10 w-10 rounded-xl flex items-center justify-center shrink-0', s.color)}>
+              <s.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-lg font-black text-slate-900">{s.value}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{s.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 text-[#005ac2] animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-16 text-red-400">
+            <AlertTriangle className="h-10 w-10 mb-3 text-red-200" />
+            <p className="text-sm font-bold">{error}</p>
+          </div>
+        ) : records.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+            <Calendar className="h-10 w-10 mb-3 text-slate-200" />
+            <p className="text-sm font-bold">Không có dữ liệu chấm công trong tháng này</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/60">
+                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Ngày</th>
+                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Ca làm</th>
+                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Check-in</th>
+                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Check-out</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Giờ làm</th>
+                  <th className="text-center px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {records.map(r => (
+                  <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-3.5 font-bold text-slate-700">
+                      {new Date(r.shift_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-600">
+                      {r.shift_start?.slice(0, 5)} – {r.shift_end?.slice(0, 5)}
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-700 font-medium">{fmt(r.checkin_at)}</td>
+                    <td className="px-5 py-3.5 text-slate-700 font-medium">{fmt(r.checkout_at)}</td>
+                    <td className="px-5 py-3.5 text-right font-bold text-slate-700">
+                      {r.worked_minutes != null ? `${(r.worked_minutes / 60).toFixed(1)}h` : '—'}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      {r.is_late ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-black">
+                          <AlertTriangle className="h-3 w-3" />
+                          Muộn {r.late_minutes}p
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Đúng giờ
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
