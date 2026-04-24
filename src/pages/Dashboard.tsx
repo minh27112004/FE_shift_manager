@@ -188,11 +188,11 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
                               shift.type === 'tertiary' ? "bg-[#d3ceef]/30 border-[#5f5c78]" : "bg-[#fe8983]/20 border-[#9f403d]"
                             )}>
                               <p className={cn(
-                                "text-xs font-bold uppercase",
+                                "text-sm font-bold uppercase",
                                 shift.type === 'primary' ? "text-[#005ac2]" :
                                 shift.type === 'tertiary' ? "text-[#5f5c78]" : "text-[#9f403d]"
                               )}>{shift.time.split(' ')[0]}</p>
-                              <p className="text-xs font-semibold mt-0.5 truncate">{shift.name}</p>
+                              <p className="text-sm font-semibold mt-0.5 truncate">{shift.name}</p>
                             </div>
                           ))
                         ) : (
@@ -230,9 +230,9 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
                     <Bell className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{notif.title}</p>
-                    <p className="text-sm text-slate-500 leading-relaxed">{notif.message}</p>
-                    <p className="text-xs text-slate-400 mt-1">{new Date(notif.created_at).toLocaleString('vi-VN')}</p>
+                    <p className="text-base font-semibold text-slate-900">{notif.title}</p>
+                    <p className="text-base text-slate-500 leading-relaxed">{notif.message}</p>
+                    <p className="text-sm text-slate-400 mt-1">{new Date(notif.created_at).toLocaleString('vi-VN')}</p>
                   </div>
                 </div>
               ))}
@@ -293,8 +293,8 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
   };
 
   // Filter shifts specifically for this employee
-  const myShifts = shifts.filter(s => 
-    s.assignments && s.assignments.some((a: any) => a.user_id === user?.id || a.user?.id === user?.id)
+  const myShifts = shifts.filter(s =>
+    s.backendData?.assignments?.some((a: any) => String(a.user ?? a.user_id) === String(user?.id))
   );
 
   const upcomingShifts = myShifts.filter(s => new Date(s.date) >= new Date()).slice(0, 3);
@@ -436,10 +436,10 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
                         {record.check_out ? <CheckCircle2 className="h-4 w-4" /> : <Timer className="h-4 w-4" />}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-slate-900">
+                        <p className="text-base font-bold text-slate-900">
                           {record.check_out ? 'Đã hoàn thành ca' : 'Đang làm việc'}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm text-slate-500">
                           {new Date(record.check_in).toLocaleDateString()} · {new Date(record.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                           {record.check_out && ` - ${new Date(record.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`}
                         </p>

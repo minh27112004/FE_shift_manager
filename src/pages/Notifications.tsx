@@ -158,17 +158,17 @@ export default function Notifications() {
                     )}>
                       {notif.title}
                     </h3>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                    <span className="text-xs font-bold text-slate-400 uppercase">
                       {new Date(notif.created_at).toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                  <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
                     {notif.message}
                   </p>
                   
                   {notif.notification_type === 'swap_request' && (
                     <div className="mt-3 flex gap-2">
-                      <button className="px-3 py-1 bg-[#005ac2] text-white text-[10px] font-black rounded-lg hover:bg-[#004fab] transition-colors">
+                      <button className="px-3 py-1 bg-[#005ac2] text-white text-xs font-black rounded-lg hover:bg-[#004fab] transition-colors">
                         XEM CHI TIẾT
                       </button>
                     </div>

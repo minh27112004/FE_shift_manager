@@ -195,8 +195,8 @@ export default function EmployeeProfile() {
                     <Mail className="h-5 w-5" />
                   </div>
                   <div className="overflow-hidden">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
-                    <p className="text-sm font-bold text-slate-700 truncate">{employee.email}</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase">Email</p>
+                    <p className="text-base font-bold text-slate-700 truncate">{employee.email}</p>
                   </div>
                 </div>
                 {employee.phone && (
@@ -205,8 +205,8 @@ export default function EmployeeProfile() {
                       <Phone className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Số điện thoại</p>
-                      <p className="text-sm font-bold text-slate-700">{employee.phone}</p>
+                      <p className="text-xs font-bold text-slate-400 uppercase">Số điện thoại</p>
+                      <p className="text-base font-bold text-slate-700">{employee.phone}</p>
                     </div>
                   </div>
                 )}
@@ -216,8 +216,8 @@ export default function EmployeeProfile() {
                       <MapPin className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Địa chỉ</p>
-                      <p className="text-sm font-bold text-slate-700">{employee.address}</p>
+                      <p className="text-xs font-bold text-slate-400 uppercase">Địa chỉ</p>
+                      <p className="text-base font-bold text-slate-700">{employee.address}</p>
                     </div>
                   </div>
                 )}
@@ -232,8 +232,8 @@ export default function EmployeeProfile() {
                     <Shield className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Vai trò</p>
-                    <p className="text-sm font-bold text-slate-700 capitalize">{employee.role || '—'}</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase">Vai trò</p>
+                    <p className="text-base font-bold text-slate-700 capitalize">{employee.role || '—'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -241,8 +241,8 @@ export default function EmployeeProfile() {
                     <Calendar className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Ngày gia nhập</p>
-                    <p className="text-sm font-bold text-slate-700">{new Date(employee.date_joined || Date.now()).toLocaleDateString()}</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase">Ngày gia nhập</p>
+                    <p className="text-base font-bold text-slate-700">{new Date(employee.date_joined || Date.now()).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function EmployeeProfile() {
                     <stat.icon className="h-5 w-5" />
                   </div>
                   <p className="text-xl font-black text-slate-900">{stat.value}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{stat.label}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -272,25 +272,25 @@ export default function EmployeeProfile() {
                   {employee.profile.id_card_number && (
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Số CCCD</p>
-                      <p className="text-sm font-bold text-slate-700 mt-0.5">{employee.profile.id_card_number}</p>
+                      <p className="text-base font-bold text-slate-700 mt-0.5">{employee.profile.id_card_number}</p>
                     </div>
                   )}
                   {employee.profile.bank_name && (
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ngân hàng</p>
-                      <p className="text-sm font-bold text-slate-700 mt-0.5">{employee.profile.bank_name} · {employee.profile.bank_account || '—'}</p>
+                      <p className="text-base font-bold text-slate-700 mt-0.5">{employee.profile.bank_name} · {employee.profile.bank_account || '—'}</p>
                     </div>
                   )}
                   {employee.profile.emergency_contact && (
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Liên hệ khẩn cấp</p>
-                      <p className="text-sm font-bold text-slate-700 mt-0.5">{employee.profile.emergency_contact}</p>
+                      <p className="text-base font-bold text-slate-700 mt-0.5">{employee.profile.emergency_contact}</p>
                     </div>
                   )}
                   {employee.profile.note && (
                     <div className="sm:col-span-2">
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ghi chú</p>
-                      <p className="text-sm text-slate-600 mt-0.5">{employee.profile.note}</p>
+                      <p className="text-base text-slate-600 mt-0.5">{employee.profile.note}</p>
                     </div>
                   )}
                 </div>

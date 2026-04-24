@@ -149,9 +149,9 @@ export default function QRScanner() {
               </div>
               <div className="flex-1">
                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Thành công</h4>
-                <p className="text-[11px] text-slate-500 font-medium">{message}</p>
+                <p className="text-sm text-slate-500 font-medium">{message}</p>
                 {shiftInfo?.store_name && (
-                  <p className="text-[10px] text-slate-400 font-medium mt-1">Tại {shiftInfo.store_name}</p>
+                  <p className="text-xs text-slate-400 font-medium mt-1">Tại {shiftInfo.store_name}</p>
                 )}
               </div>
               <Link to="/">
@@ -174,7 +174,7 @@ export default function QRScanner() {
               </div>
               <div className="flex-1">
                 <h4 className="text-xs font-black text-red-800 uppercase tracking-wider">Lỗi</h4>
-                <p className="text-[11px] text-red-600 font-medium">{message}</p>
+                <p className="text-sm text-red-600 font-medium">{message}</p>
               </div>
               <button 
                 onClick={() => setStatus('idle')}

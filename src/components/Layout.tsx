@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ToastContainer from './ToastContainer';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -75,6 +76,7 @@ export default function Layout({ children }: LayoutProps) {
     { icon: Bell, label: 'Thông báo', path: '/notifications', badge: unreadCount },
     { icon: QrCode, label: 'Chấm công QR', path: '/qr-scanner' },
     { icon: User, label: 'Hồ sơ', path: '/profile/me' },
+    { icon: Settings, label: 'Cài đặt', path: '/settings' },
     { icon: HelpCircle, label: 'Hỗ trợ', path: '/help' },
   ];
 
@@ -168,6 +170,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-[#fcf8f9]">
+      <ToastContainer />
 
       {/* ── Desktop Sidebar ───────────────────────────────── */}
       <aside className="hidden lg:flex fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200/50 bg-slate-50 p-4 flex-col gap-2">

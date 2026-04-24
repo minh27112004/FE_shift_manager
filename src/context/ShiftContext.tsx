@@ -4,12 +4,12 @@ import { useAuth } from './AuthContext';
 
 export interface Shift {
   id: string | number;
-  name: string; // Map from store or template or note
-  time: string; // Map from start_time - end_time
-  date: string; // ISO format YYYY-MM-DD
-  type: 'primary' | 'tertiary' | 'error'; // Map from is_emergency
+  name: string;
+  time: string;
+  date: string;
+  type: 'primary' | 'tertiary' | 'error';
   label: string;
-  backendData?: any; // Keep original raw data
+  backendData?: any;
 }
 
 interface ShiftContextType {
@@ -26,17 +26,13 @@ const ShiftContext = createContext<ShiftContextType | undefined>(undefined);
 export function ShiftProvider({ children }: { children: React.ReactNode }) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated } = useAuth(); // Assume AuthContext exists and wraps this or is accessible
-
+  const { isAuthenticated } = useAuth();
   const fetchShifts = useCallback(async () => {
     if (!isAuthenticated) return;
-    
     setIsLoading(true);
     try {
       const response = await api.get('/shifts/');
       const rawShifts = response.data;
-      
-      // Transform backend data to frontend interface
       const formattedShifts: Shift[] = rawShifts.map((s: any) => {
         const timeStr = `${s.start_time?.substring(0, 5)} - ${s.end_time?.substring(0, 5)}`;
         return {
@@ -49,11 +45,9 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
           backendData: s
         };
       });
-      
       setShifts(formattedShifts);
     } catch (error) {
       console.error('Failed to fetch shifts:', error);
-      // optionally load from localstorage as fallback or show error
     } finally {
       setIsLoading(false);
     }
@@ -63,24 +57,30 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     fetchShifts();
   }, [fetchShifts]);
 
-  const addShift = async (shiftData: any) => {
-    try {
-      const payload = {
-        date: shiftData.date,
-        start_time: shiftData.time?.split('-')[0]?.trim() + ':00',
-        end_time: shiftData.time?.split('-')[1]?.trim() + ':00',
-        note: shiftData.label,
-        is_emergency: shiftData.type === 'error',
-        max_workers: 5,
-        store: 1, // hardcoded for now or fetch stores list
-      };
-      
-      await api.post('/shifts/', payload);
-      await fetchShifts();
-    } catch (error) {
-      console.error('Failed to create shift:', error);
-      throw error;
-    }
+  const addShift = async (shiftData: {
+    date: string;
+    start_time: string;
+    end_time: string;
+    note?: string;
+    is_open?: boolean;
+    is_emergency?: boolean;
+    max_workers?: number;
+    salary_multiplier?: string;
+  }) => {
+    const pad = (t: string) => t.length === 5 ? t + ':00' : t;
+    const payload = {
+      date: shiftData.date,
+      start_time: pad(shiftData.start_time),
+      end_time: pad(shiftData.end_time),
+      note: shiftData.note || '',
+      is_open: shiftData.is_open ?? true,
+      is_emergency: shiftData.is_emergency ?? false,
+      max_workers: shiftData.max_workers ?? 1,
+      salary_multiplier: shiftData.salary_multiplier ?? '1.00',
+      store: 1,
+    };
+    await api.post('/shifts/', payload);
+    await fetchShifts();
   };
 
   const removeShift = async (id: string | number) => {

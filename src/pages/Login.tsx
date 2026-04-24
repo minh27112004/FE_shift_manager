@@ -310,7 +310,7 @@ export default function Login() {
       navigate(from, { replace: true });
     } catch (err: any) {
       if (err.response && err.response.status === 401) {
-        setError("Sai tên đăng nhập hoặc mật khẩu.");
+        setError("Vui lòng kiểm tra lại tên đăng nhập và mật khẩu.");
       } else {
         setError("Đã xảy ra lỗi hệ thống, vui lòng thử lại sau.");
       }

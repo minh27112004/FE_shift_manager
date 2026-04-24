@@ -20,7 +20,9 @@ import {
   AlertCircle,
   Edit3,
   Save,
-  X
+  X,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +44,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const role = user?.role || 'employee';
   const isAdmin = role === 'admin' || role === 'manager';
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -53,7 +56,7 @@ export default function Settings() {
       title: 'Tài khoản',
       items: [
         { icon: User,       label: 'Thông tin cá nhân',      desc: 'Cập nhật tên, email và ảnh đại diện',     color: 'bg-blue-100 text-blue-600',   path: '/profile/me' },
-        { icon: Lock,       label: 'Mật khẩu & Bảo mật',    desc: 'Thay đổi mật khẩu và xác thực 2 lớp',    color: 'bg-purple-100 text-purple-600' },
+        { icon: Lock,       label: 'Mật khẩu & Bảo mật',    desc: 'Thay đổi mật khẩu và xác thực 2 lớp',    color: 'bg-purple-100 text-purple-600', action: () => setShowChangePassword(true) },
         { icon: CreditCard, label: 'Phương thức thanh toán', desc: 'Quản lý tài khoản nhận lương',            color: 'bg-green-100 text-green-600' },
       ]
     },
@@ -99,7 +102,7 @@ export default function Settings() {
                 {section.items.map((item: any) => (
                   <button
                     key={item.label}
-                    onClick={() => item.path && navigate(item.path)}
+                    onClick={() => { if (item.action) item.action(); else if (item.path) navigate(item.path); }}
                     className="w-full p-5 flex items-center justify-between hover:bg-slate-50 transition-colors group"
                   >
                     <div className="flex items-center gap-4">
@@ -141,6 +144,155 @@ export default function Settings() {
           </p>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showChangePassword && (
+          <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [show, setShow] = useState({ old: false, new: false, confirm: false });
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const set = (field: keyof typeof form, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
+  };
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.old_password) e.old_password = 'Vui lòng nhập mật khẩu cũ.';
+    if (form.new_password.length < 6) e.new_password = 'Mật khẩu mới phải có ít nhất 6 ký tự.';
+    if (form.new_password !== form.confirm_password) e.confirm_password = 'Mật khẩu xác nhận không khớp.';
+    return e;
+  };
+
+  const handleSubmit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setSubmitting(true);
+    try {
+      await api.put('/change-password/', form);
+      onClose();
+    } catch (err: any) {
+      const data = err.response?.data;
+      if (data && typeof data === 'object') {
+        const mapped: Record<string, string> = {};
+        for (const [key, val] of Object.entries(data)) {
+          mapped[key] = Array.isArray(val) ? (val as string[]).join(' ') : String(val);
+        }
+        setErrors(mapped);
+      } else {
+        setErrors({ general: 'Đã có lỗi xảy ra. Vui lòng thử lại.' });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-purple-100 rounded-2xl flex items-center justify-center">
+              <Lock className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="font-black text-slate-900 text-base">Đổi mật khẩu</h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Cập nhật mật khẩu đăng nhập</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+          {errors.general && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700 font-medium">{errors.general}</p>
+            </div>
+          )}
+
+          {([
+            { key: 'old_password',     label: 'Mật khẩu hiện tại', showKey: 'old' as const },
+            { key: 'new_password',     label: 'Mật khẩu mới',      showKey: 'new' as const },
+            { key: 'confirm_password', label: 'Xác nhận mật khẩu', showKey: 'confirm' as const },
+          ] as const).map(({ key, label, showKey }) => (
+            <div key={key} className="space-y-1.5">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-wider">{label}</label>
+              <div className="relative">
+                <input
+                  type={show[showKey] ? 'text' : 'password'}
+                  value={form[key]}
+                  onChange={e => set(key, e.target.value)}
+                  className={cn(
+                    inputCls, 'pr-10',
+                    errors[key] && 'border-red-300 focus:ring-red-200 focus:border-red-400'
+                  )}
+                  placeholder={key === 'old_password' ? '••••••••' : 'Tối thiểu 6 ký tự'}
+                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShow(prev => ({ ...prev, [showKey]: !prev[showKey] }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {show[showKey] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors[key] && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />{errors[key]}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="flex-1 py-2.5 rounded-xl bg-[#005ac2] text-white text-sm font-black hover:bg-[#004fab] transition-all shadow-lg shadow-[#005ac2]/20 disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {submitting ? 'Đang lưu...' : 'Cập nhật'}
+          </button>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

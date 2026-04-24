@@ -329,7 +329,7 @@ function AdminCard({ badge, badgeColor, title, meta, person, loading, onApprove,
             </div>
             <div>
               <p className="text-sm font-bold text-slate-800">{person.name}</p>
-              <p className="text-xs text-slate-400 truncate max-w-xs">{person.sub}</p>
+              <p className="text-sm text-slate-400 truncate max-w-xs">{person.sub}</p>
             </div>
           </div>
         </div>
@@ -370,14 +370,14 @@ function EmployeeRegistration() {
   const wishlistShifts = shifts.filter(s =>
     !s.backendData?.is_emergency &&
     s.backendData?.is_open &&
-    !s.backendData?.assignments?.some((a: any) => a.user_id === user?.id || a.user?.id === user?.id)
+    !s.backendData?.assignments?.some((a: any) => String(a.user ?? a.user_id) === String(user?.id))
   );
 
   // Ca khẩn cấp: emergency + open, not already my shift
   const emergencyShifts = shifts.filter(s =>
     s.backendData?.is_emergency &&
     s.backendData?.is_open &&
-    !s.backendData?.assignments?.some((a: any) => a.user_id === user?.id || a.user?.id === user?.id)
+    !s.backendData?.assignments?.some((a: any) => String(a.user ?? a.user_id) === String(user?.id))
   );
 
   // Ca nhượng: transfer requests where I am the partner (someone is giving me their shift)
@@ -451,7 +451,7 @@ function EmployeeRegistration() {
   };
 
   const myAssignedCount = shifts.filter(s =>
-    s.backendData?.assignments?.some((a: any) => a.user_id === user?.id || a.user?.id === user?.id)
+    s.backendData?.assignments?.some((a: any) => String(a.user ?? a.user_id) === String(user?.id))
   ).length;
 
   const tabs: { id: Tab; label: string; icon: any; count: number; color: string; badgeColor: string }[] = [
@@ -730,11 +730,11 @@ function ShiftCard({ shift, variant, claiming, onClaim }: ShiftCardProps) {
           <div className="flex items-center gap-4 mt-1.5">
             <div className="flex items-center gap-1.5 text-slate-500">
               <CalendarIcon className="h-3.5 w-3.5" />
-              <span className="text-xs font-bold">{shift.date}</span>
+              <span className="text-sm font-bold">{shift.date}</span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-500">
               <Clock className="h-3.5 w-3.5" />
-              <span className="text-xs font-bold">{shift.time}</span>
+              <span className="text-sm font-bold">{shift.time}</span>
             </div>
           </div>
         </div>
@@ -811,7 +811,7 @@ function SwapCard({ request, responding, onAccept, onReject }: SwapCardProps) {
             {isTransfer ? ' muốn nhượng ca cho bạn' : ' muốn đổi ca với bạn'}
           </p>
           {request.message && (
-            <p className="text-xs text-slate-500 mt-1 italic">"{request.message}"</p>
+            <p className="text-sm text-slate-500 mt-1 italic">"{request.message}"</p>
           )}
         </div>
       </div>

@@ -1,4 +1,8 @@
 import axios from 'axios';
+import { toast } from './toast';
+
+// Methods whose success responses should NOT auto-toast (GET = read-only, no message needed)
+const SILENT_METHODS = new Set(['get', 'head', 'options']);
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/';
 
@@ -23,11 +27,18 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Auto-toast khi BE trả về `detail` trong response thành công (POST/PUT/PATCH/DELETE)
+    const method = response.config.method?.toLowerCase() ?? '';
+    if (!SILENT_METHODS.has(method) && response.data?.detail) {
+      toast.success(response.data.detail);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('auth/login/')) {
       originalRequest._retry = true;
       
       try {

@@ -264,11 +264,11 @@ export default function EmployeeManagement() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="text-left px-6 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nhân viên</th>
-                    <th className="text-left px-4 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Liên hệ</th>
-                    <th className="text-left px-4 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden lg:table-cell">Lương/giờ</th>
-                    <th className="text-left px-4 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vai trò</th>
-                    <th className="text-left px-4 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Trạng thái</th>
+                    <th className="text-left px-6 py-3.5 text-[14px] font-black text-slate-400 uppercase tracking-widest">Nhân viên</th>
+                    <th className="text-left px-4 py-3.5 text-[14px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Liên hệ</th>
+                    <th className="text-left px-4 py-3.5 text-[14px] font-black text-slate-400 uppercase tracking-widest hidden lg:table-cell">Lương/giờ</th>
+                    <th className="text-left px-4 py-3.5 text-[14px] font-black text-slate-400 uppercase tracking-widest">Vai trò</th>
+                    <th className="text-left px-4 py-3.5 text-[14px] font-black text-slate-400 uppercase tracking-widest">Trạng thái</th>
                     <th className="px-4 py-3.5"></th>
                   </tr>
                 </thead>
@@ -291,21 +291,21 @@ export default function EmployeeManagement() {
                             {emp.full_name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-bold text-sm text-slate-900">{emp.full_name}</p>
-                            <p className="text-[11px] text-slate-400">ID: {emp.id}</p>
+                            <p className="font-bold text-base text-slate-900">{emp.full_name}</p>
+                            <p className="text-xs text-slate-400">ID: {emp.id}</p>
                           </div>
                         </div>
                       </td>
                       {/* Contact */}
                       <td className="px-4 py-4 hidden md:table-cell">
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                            <Phone className="h-3 w-3 text-slate-400" />
+                          <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                            <Phone className="h-3.5 w-3.5 text-slate-400" />
                             {emp.phone}
                           </div>
                           {emp.email && (
-                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                              <Mail className="h-3 w-3 text-slate-400" />
+                            <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                              <Mail className="h-3.5 w-3.5 text-slate-400" />
                               <span className="truncate max-w-[160px]">{emp.email}</span>
                             </div>
                           )}
@@ -322,7 +322,7 @@ export default function EmployeeManagement() {
                       {/* Role */}
                       <td className="px-4 py-4">
                         <span className={cn(
-                          'px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider',
+                          'px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider',
                           emp.role === 'manager'
                             ? 'bg-purple-100 text-purple-700'
                             : 'bg-blue-50 text-[#005ac2]'
@@ -333,7 +333,7 @@ export default function EmployeeManagement() {
                       {/* Status */}
                       <td className="px-4 py-4">
                         <span className={cn(
-                          'px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider',
+                          'px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider',
                           emp.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
                         )}>
                           {emp.is_active ? 'Hoạt động' : 'Đã khóa'}
