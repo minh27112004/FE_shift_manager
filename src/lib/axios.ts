@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from './toast';
 
-// Methods whose success responses should NOT auto-toast (GET = read-only, no message needed)
+
 const SILENT_METHODS = new Set(['get', 'head', 'options']);
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/';
@@ -28,10 +28,10 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
-    // Auto-toast khi BE trả về `detail` trong response thành công (POST/PUT/PATCH/DELETE)
     const method = response.config.method?.toLowerCase() ?? '';
-    if (!SILENT_METHODS.has(method) && response.data?.detail) {
-      toast.success(response.data.detail);
+    const successMsg = response.data?.detail || response.data?.message;
+    if (!SILENT_METHODS.has(method) && successMsg) {
+      toast.success(successMsg);
     }
     return response;
   },
@@ -70,6 +70,21 @@ api.interceptors.response.use(
       }
     }
     
+    // Auto-toast lỗi từ BE
+    if (error.response) {
+      const data = error.response.data;
+      const status = error.response.status;
+      const msg =
+        data?.detail ||
+        data?.non_field_errors?.[0] ||
+        (typeof data === 'string' ? data : null) ||
+        (status === 403 ? 'Bạn không có quyền thực hiện thao tác này.' : null) ||
+        (status === 404 ? 'Không tìm thấy tài nguyên.' : null) ||
+        (status >= 500 ? 'Lỗi máy chủ. Vui lòng thử lại sau.' : null) ||
+        'Đã có lỗi xảy ra.';
+      toast.error(msg);
+    }
+
     return Promise.reject(error);
   }
 );

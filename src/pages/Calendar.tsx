@@ -31,6 +31,7 @@ import { cn } from '../lib/utils';
 import { useShifts } from '../context/ShiftContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
+import { toast } from '../lib/toast';
 
 function buildCalendarDays(year: number, month: number) {
 
@@ -107,6 +108,7 @@ export default function CalendarPage() {
   const [createError, setCreateError] = useState('');
   const [qrShift, setQrShift] = useState<{ id: number; label: string; time: string; date: string } | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [detailShift, setDetailShift] = useState<ReturnType<typeof transformShift> | null>(null);
 
   // Employee-specific: fetch personal shifts from dedicated endpoint
   const [myShifts, setMyShifts] = useState<ReturnType<typeof transformShift>[]>([]);
@@ -281,12 +283,14 @@ export default function CalendarPage() {
                     {dayShifts.map((shift, si) => (
                       <div
                         key={si}
+                        onClick={() => { if (role === 'admin' || role === 'manager') setDetailShift(shift as ReturnType<typeof transformShift>); }}
                         className={cn(
                           "px-2 py-1 rounded-md text-xs font-bold border-l-4",
                           shift.type === 'primary' && "bg-[#d8e2ff]/40 text-[#004eaa] border-[#005ac2]",
                           shift.type === 'tertiary' && "bg-[#d3ceef]/50 text-[#47445f] border-[#5f5c78]",
                           shift.type === 'error' && "bg-[#fe8983]/30 text-[#752121] border-[#9f403d]",
-                          role === 'employee' && "ring-2 ring-[#005ac2] ring-offset-1"
+                          role === 'employee' && "ring-2 ring-[#005ac2] ring-offset-1",
+                          (role === 'admin' || role === 'manager') && "cursor-pointer hover:brightness-95 transition-all"
                         )}
                       >
                         <div className="truncate">{shift.label}</div>
@@ -337,6 +341,17 @@ export default function CalendarPage() {
       {/* QR Modal */}
       <AnimatePresence>
         {qrShift && <QRModal shift={qrShift} onClose={() => setQrShift(null)} />}
+      </AnimatePresence>
+
+      {/* Shift Detail Modal */}
+      <AnimatePresence>
+        {detailShift && (
+          <ShiftDetailModal
+            shift={detailShift}
+            onClose={() => setDetailShift(null)}
+            onOpenQR={() => { setQrShift({ id: detailShift.id, label: detailShift.label, time: detailShift.time, date: detailShift.date }); setDetailShift(null); }}
+          />
+        )}
       </AnimatePresence>
 
       {/* Legend & Insights */}
@@ -834,6 +849,149 @@ function QRModal({ shift, onClose }: { shift: { id: number; label: string; time:
   );
 }
 
+// ─── Shift Detail Modal ───────────────────────────────────────────────────────
+
+type TransformedShift = ReturnType<typeof transformShift>;
+
+function ShiftDetailModal({ shift, onClose, onOpenQR }: {
+  shift: TransformedShift;
+  onClose: () => void;
+  onOpenQR: () => void;
+}) {
+  const [detail, setDetail] = useState<any>(null);
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const [shiftRes, recRes] = await Promise.all([
+          api.get(`/shifts/${shift.id}/`),
+          api.get(`/attendance/records/shift/${shift.id}/`),
+        ]);
+        setDetail(shiftRes.data);
+        setRecords(recRes.data);
+      } catch {
+        setDetail(shift.backendData);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, [shift.id]);
+
+  const assignments: any[] = detail?.assignments ?? shift.backendData?.assignments ?? [];
+
+  const statusLabel: Record<string, { label: string; cls: string }> = {
+    confirmed: { label: 'Đã duyệt', cls: 'bg-green-100 text-green-700' },
+    pending:   { label: 'Chờ duyệt', cls: 'bg-yellow-100 text-yellow-700' },
+    rejected:  { label: 'Từ chối', cls: 'bg-red-100 text-red-700' },
+    cancelled: { label: 'Đã hủy', cls: 'bg-slate-100 text-slate-500' },
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 24, scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+      >
+        {/* Header */}
+        <div className={cn(
+          'px-6 py-5 shrink-0',
+          shift.type === 'error' ? 'bg-red-50 border-b border-red-100' : 'bg-[#005ac2]/5 border-b border-[#005ac2]/10'
+        )}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                {shift.type === 'error' && (
+                  <span className="text-[10px] font-black bg-red-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">Khẩn cấp</span>
+                )}
+                <h2 className="font-black text-slate-900 text-lg leading-tight">{shift.label}</h2>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{shift.time}</span>
+                <span className="flex items-center gap-1"><CalendarCheck className="h-3.5 w-3.5" />{shift.date}</span>
+                <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />
+                  {assignments.filter((a: any) => a.status === 'confirmed').length}/{detail?.max_workers ?? shift.backendData?.max_workers ?? '?'}
+                </span>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-white/80 transition-colors shrink-0">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 text-[#005ac2] animate-spin" /></div>
+          ) : assignments.length === 0 ? (
+            <div className="text-center py-10 text-slate-400">
+              <Users className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+              <p className="text-sm font-bold">Chưa có nhân viên đăng ký</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Danh sách nhân viên</p>
+              {assignments.map((a: any) => {
+                const rec = records.find((r: any) => String(r.user) === String(a.user ?? a.user_id));
+                const st = statusLabel[a.status] ?? { label: a.status, cls: 'bg-slate-100 text-slate-500' };
+                return (
+                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-slate-200 transition-colors bg-white">
+                    <div className="h-9 w-9 rounded-xl bg-[#005ac2]/10 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-black text-[#005ac2]">
+                        {(a.user_name ?? a.full_name ?? '?')[0]?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{a.user_name ?? a.full_name ?? `NV #${a.user ?? a.user_id}`}</p>
+                      {a.user_phone && <p className="text-xs text-slate-400 font-medium">{a.user_phone}</p>}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={cn('text-[10px] font-black px-2 py-0.5 rounded-full', st.cls)}>{st.label}</span>
+                      {rec ? (
+                        <span className="text-[10px] font-bold text-green-600 flex items-center gap-0.5">
+                          <CheckCircle2 className="h-3 w-3" />
+                          {rec.checkin_at ? new Date(rec.checkin_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''} check-in
+                          {rec.is_late && <span className="ml-1 text-orange-500">· muộn {rec.late_minutes}p</span>}
+                        </span>
+                      ) : a.status === 'confirmed' ? (
+                        <span className="text-[10px] font-bold text-slate-400">Chưa check-in</span>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0">
+          <button
+            onClick={onOpenQR}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#005ac2] text-[#005ac2] text-sm font-black hover:bg-[#005ac2]/5 transition-colors"
+          >
+            <QrCode className="h-4 w-4" /> Tạo QR Check-in
+          </button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold hover:bg-slate-200 transition-colors">
+            Đóng
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 interface ShiftTemplate {
   id: number;
   name: string;
@@ -901,7 +1059,7 @@ function TemplateManagerModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Xóa template này?')) return;
+    if (!await toast.confirm('Xóa template này?', 'Xóa')) return;
     try {
       await api.delete(`/shifts/templates/${id}/`);
       fetchTemplates();

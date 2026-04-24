@@ -32,8 +32,8 @@ export default function QRScanner() {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 8000 })
       );
-      latitude = pos.coords.latitude;
-      longitude = pos.coords.longitude;
+      latitude = parseFloat(pos.coords.latitude.toFixed(8));
+      longitude = parseFloat(pos.coords.longitude.toFixed(8));
     } catch {
       setStatus('error');
       setMessage('Không lấy được vị trí GPS. Vui lòng cho phép truy cập vị trí và thử lại.');

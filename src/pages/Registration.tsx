@@ -23,6 +23,7 @@ import { cn } from '../lib/utils';
 import { useShifts } from '../context/ShiftContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
+import { toast } from '../lib/toast';
 
 type Tab = 'wishlist' | 'emergency' | 'handoff' | 'swap';
 
@@ -118,7 +119,7 @@ function AdminRegistration() {
       await api.post(`/shifts/${claim.shiftId}/assignments/${claim.assignmentId}/${approve ? 'approve' : 'reject'}/`);
       await fetchShifts();
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Thao tác thất bại.');
+      toast.error(err.response?.data?.detail || 'Thao tác thất bại.');
     } finally {
       setActionId(null);
     }
@@ -131,7 +132,7 @@ function AdminRegistration() {
       await api.post(`/shifts/swap-requests/${swapId}/${approve ? 'approve' : 'reject'}/`);
       setSwapRequests(prev => prev.filter(r => r.id !== swapId));
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Thao tác thất bại.');
+      toast.error(err.response?.data?.detail || 'Thao tác thất bại.');
     } finally {
       setActionId(null);
     }
@@ -407,13 +408,13 @@ function EmployeeRegistration() {
 
   const handleClaim = async (shiftId: string | number) => {
     if (claimingId) return;
-    if (!window.confirm('Bạn có chắc chắn muốn đăng ký ca này?')) return;
+    if (!await toast.confirm('Bạn có chắc chắn muốn đăng ký ca này?', 'Đăng ký')) return;
     setClaimingId(shiftId);
     try {
       await claimShift(shiftId);
-      alert('Đã gửi đăng ký thành công! Vui lòng chờ quản lý duyệt.');
-    } catch {
-      alert('Đăng ký thất bại. Ca có thể đã đầy hoặc lỗi hệ thống.');
+      toast.success('Đã gửi đăng ký thành công! Vui lòng chờ quản lý duyệt.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || 'Đăng ký thất bại. Ca có thể đã đầy hoặc lỗi hệ thống.');
     } finally {
       setClaimingId(null);
     }
@@ -421,13 +422,13 @@ function EmployeeRegistration() {
 
   const handleClaimEmergency = async (shiftId: string | number) => {
     if (claimingId) return;
-    if (!window.confirm('Bạn có chắc chắn muốn nhận ca khẩn cấp này?')) return;
+    if (!await toast.confirm('Bạn có chắc chắn muốn nhận ca khẩn cấp này?', 'Nhận ca')) return;
     setClaimingId(shiftId);
     try {
       await claimShift(shiftId);
-      alert('Đã nhận ca khẩn cấp thành công!');
-    } catch {
-      alert('Nhận ca thất bại. Ca có thể đã đầy hoặc lỗi hệ thống.');
+      toast.success('Đã nhận ca khẩn cấp thành công!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || 'Nhận ca thất bại. Ca có thể đã đầy hoặc lỗi hệ thống.');
     } finally {
       setClaimingId(null);
     }
@@ -436,15 +437,15 @@ function EmployeeRegistration() {
   const handleSwapRespond = async (swapId: number, accept: boolean) => {
     if (respondingId) return;
     const action = accept ? 'đồng ý' : 'từ chối';
-    if (!window.confirm(`Bạn có chắc chắn muốn ${action} yêu cầu này?`)) return;
+    if (!await toast.confirm(`Bạn có chắc chắn muốn ${action} yêu cầu này?`, accept ? 'Đồng ý' : 'Từ chối')) return;
     setRespondingId(swapId);
     try {
       const endpoint = accept ? `partner-accept` : `partner-reject`;
       await api.post(`/shifts/swap-requests/${swapId}/${endpoint}/`);
       setSwapRequests(prev => prev.filter(r => r.id !== swapId));
-      alert(accept ? 'Đã đồng ý. Vui lòng chờ quản lý xác nhận.' : 'Đã từ chối yêu cầu.');
-    } catch {
-      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+      toast.success(accept ? 'Đã đồng ý. Vui lòng chờ quản lý xác nhận.' : 'Đã từ chối yêu cầu.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || err.response?.data?.non_field_errors?.[0] || 'Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setRespondingId(null);
     }

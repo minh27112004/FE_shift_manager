@@ -269,11 +269,20 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
 
   const handleCheckOut = async () => {
     if (!activeAttendance) return;
+    const shiftEnd = activeAttendance.shift_end
+      ? new Date(`1970-01-01T${activeAttendance.shift_end}`)
+      : null;
+    const now = new Date();
+    const nowTime = new Date(`1970-01-01T${now.toTimeString().slice(0, 8)}`);
+    const minutesLeft = shiftEnd ? Math.round((shiftEnd.getTime() - nowTime.getTime()) / 60000) : 0;
+    const msg = minutesLeft > 0
+      ? `Ca làm vẫn còn ${minutesLeft} phút nữa mới kết thúc. Bạn có chắc chắn muốn checkout sớm?`
+      : 'Bạn có chắc chắn muốn kết thúc ca làm việc này?';
+    const ok = await toast.confirm(msg, 'Kết thúc ca');
+    if (!ok) return;
     try {
-      if (window.confirm('Bạn có chắc chắn muốn kết thúc ca làm việc này?')) {
-        await api.post('/attendance/records/checkout/', { shift_id: activeAttendance.shift });
-        setActiveAttendance(null);
-      }
+      await api.post('/attendance/records/checkout/', { shift_id: activeAttendance.shift });
+      setActiveAttendance(null);
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Lỗi khi check-out');
     }
@@ -417,7 +426,7 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
                      <span className="text-xs font-black uppercase tracking-widest text-blue-200">Đang thực hiện ca</span>
                      <Timer className="h-4 w-4 text-green-400 animate-pulse" />
                    </div>
-                   <p className="text-lg font-black tracking-tight">Bắt đầu lúc: {new Date(activeAttendance.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                   <p className="text-lg font-black tracking-tight">Bắt đầu lúc: {new Date(activeAttendance.checkin_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               ) : (
                 <button 
