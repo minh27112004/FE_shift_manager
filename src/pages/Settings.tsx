@@ -1,33 +1,34 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
-  User,
+  AlertCircle,
   Bell,
-  Shield,
-  Globe,
-  Moon,
-  HelpCircle,
-  LogOut,
+  CheckCircle2,
   ChevronRight,
   CreditCard,
-  Lock,
-  Store,
-  MapPin,
-  Phone,
-  Navigation,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
   Edit3,
-  Save,
-  X,
   Eye,
-  EyeOff
-} from 'lucide-react';
-import { cn } from '../lib/utils';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import api from '../lib/axios';
+  EyeOff,
+  Globe,
+  HelpCircle,
+  Loader2,
+  Lock,
+  LogOut,
+  MapPin,
+  Moon,
+  Navigation,
+  Phone,
+  Save,
+  Send,
+  Shield,
+  Store,
+  User,
+  X,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import api from "../lib/axios";
+import { cn } from "../lib/utils";
 
 interface StoreData {
   id: number;
@@ -42,38 +43,89 @@ interface StoreData {
 export default function Settings() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const role = user?.role || 'employee';
-  const isAdmin = role === 'admin' || role === 'manager';
+  const role = user?.role || "employee";
+  const isAdmin = role === "admin" || role === "manager";
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showTelegram, setShowTelegram] = useState(false);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const sections = [
     {
-      title: 'Tài khoản',
+      title: "Tài khoản",
       items: [
-        { icon: User,       label: 'Thông tin cá nhân',      desc: 'Cập nhật tên, email và ảnh đại diện',     color: 'bg-blue-100 text-blue-600',   path: '/profile/me' },
-        { icon: Lock,       label: 'Mật khẩu & Bảo mật',    desc: 'Thay đổi mật khẩu và xác thực 2 lớp',    color: 'bg-purple-100 text-purple-600', action: () => setShowChangePassword(true) },
-        { icon: CreditCard, label: 'Phương thức thanh toán', desc: 'Quản lý tài khoản nhận lương',            color: 'bg-green-100 text-green-600' },
-      ]
+        {
+          icon: User,
+          label: "Thông tin cá nhân",
+          desc: "Cập nhật tên, email và ảnh đại diện",
+          color: "bg-blue-100 text-blue-600",
+          path: "/profile/me",
+        },
+        {
+          icon: Lock,
+          label: "Mật khẩu & Bảo mật",
+          desc: "Thay đổi mật khẩu và xác thực 2 lớp",
+          color: "bg-purple-100 text-purple-600",
+          action: () => setShowChangePassword(true),
+        },
+        {
+          icon: CreditCard,
+          label: "Phương thức thanh toán",
+          desc: "Quản lý tài khoản nhận lương",
+          color: "bg-green-100 text-green-600",
+        },
+      ],
     },
     {
-      title: 'Ứng dụng',
+      title: "Ứng dụng",
       items: [
-        { icon: Bell,   label: 'Thông báo',       desc: 'Cấu hình thông báo đẩy và email',  color: 'bg-amber-100 text-amber-600' },
-        { icon: Globe,  label: 'Ngôn ngữ',        desc: 'Tiếng Việt (Mặc định)',             color: 'bg-indigo-100 text-indigo-600' },
-        { icon: Moon,   label: 'Chế độ tối',      desc: 'Tự động theo hệ thống',            color: 'bg-slate-100 text-slate-600', toggle: true },
-      ]
+        {
+          icon: Bell,
+          label: "Thông báo",
+          desc: "Cấu hình thông báo đẩy và email",
+          color: "bg-amber-100 text-amber-600",
+        },
+        {
+          icon: Send,
+          label: "Kết nối Telegram",
+          desc: "Nhận thông báo ca làm qua Telegram",
+          color: "bg-sky-100 text-sky-600",
+          action: () => setShowTelegram(true),
+        },
+        {
+          icon: Globe,
+          label: "Ngôn ngữ",
+          desc: "Tiếng Việt (Mặc định)",
+          color: "bg-indigo-100 text-indigo-600",
+        },
+        {
+          icon: Moon,
+          label: "Chế độ tối",
+          desc: "Tự động theo hệ thống",
+          color: "bg-slate-100 text-slate-600",
+          toggle: true,
+        },
+      ],
     },
     {
-      title: 'Hỗ trợ',
+      title: "Hỗ trợ",
       items: [
-        { icon: HelpCircle, label: 'Trung tâm trợ giúp',           desc: 'Câu hỏi thường gặp và hướng dẫn', color: 'bg-pink-100 text-pink-600' },
-        { icon: Shield,     label: 'Điều khoản & Quyền riêng tư', desc: 'Chính sách bảo mật dữ liệu',      color: 'bg-cyan-100 text-cyan-600' },
-      ]
+        {
+          icon: HelpCircle,
+          label: "Trung tâm trợ giúp",
+          desc: "Câu hỏi thường gặp và hướng dẫn",
+          color: "bg-pink-100 text-pink-600",
+        },
+        {
+          icon: Shield,
+          label: "Điều khoản & Quyền riêng tư",
+          desc: "Chính sách bảo mật dữ liệu",
+          color: "bg-cyan-100 text-cyan-600",
+        },
+      ],
     },
   ];
 
@@ -84,34 +136,51 @@ export default function Settings() {
       className="p-4 sm:p-8 pb-12 max-w-4xl mx-auto"
     >
       <div className="mb-10">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Cài đặt</h1>
-        <p className="text-slate-500 font-medium mt-1">Quản lý trải nghiệm ứng dụng và tài khoản của bạn</p>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          Cài đặt
+        </h1>
+        <p className="text-slate-500 font-medium mt-1">
+          Quản lý trải nghiệm ứng dụng và tài khoản của bạn
+        </p>
       </div>
 
       <div className="space-y-10">
-
         {/* Store settings — admin only */}
         {isAdmin && <StoreSettings />}
 
         {/* Personal + App sections */}
         {sections.map((section) => (
           <div key={section.title}>
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">{section.title}</h2>
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-1">
+              {section.title}
+            </h2>
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="divide-y divide-slate-50">
                 {section.items.map((item: any) => (
                   <button
                     key={item.label}
-                    onClick={() => { if (item.action) item.action(); else if (item.path) navigate(item.path); }}
+                    onClick={() => {
+                      if (item.action) item.action();
+                      else if (item.path) navigate(item.path);
+                    }}
                     className="w-full p-5 flex items-center justify-between hover:bg-slate-50 transition-colors group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={cn('h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm', item.color)}>
+                      <div
+                        className={cn(
+                          "h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+                          item.color,
+                        )}
+                      >
                         <item.icon className="h-5 w-5" />
                       </div>
                       <div className="text-left">
-                        <h3 className="text-sm font-black text-slate-900">{item.label}</h3>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">{item.desc}</p>
+                        <h3 className="text-sm font-black text-slate-900">
+                          {item.label}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">
+                          {item.desc}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -149,47 +218,65 @@ export default function Settings() {
         {showChangePassword && (
           <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
         )}
+        {showTelegram && (
+          <TelegramModal onClose={() => setShowTelegram(false)} />
+        )}
       </AnimatePresence>
     </motion.div>
   );
 }
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [form, setForm] = useState({
+    old_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
   const [show, setShow] = useState({ old: false, new: false, confirm: false });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const set = (field: keyof typeof form, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-    setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => {
+      const e = { ...prev };
+      delete e[field];
+      return e;
+    });
   };
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.old_password) e.old_password = 'Vui lòng nhập mật khẩu cũ.';
-    if (form.new_password.length < 6) e.new_password = 'Mật khẩu mới phải có ít nhất 6 ký tự.';
-    if (form.new_password !== form.confirm_password) e.confirm_password = 'Mật khẩu xác nhận không khớp.';
+    if (!form.old_password) e.old_password = "Vui lòng nhập mật khẩu cũ.";
+    if (form.new_password.length < 6)
+      e.new_password = "Mật khẩu mới phải có ít nhất 6 ký tự.";
+    if (form.new_password !== form.confirm_password)
+      e.confirm_password = "Mật khẩu xác nhận không khớp.";
     return e;
   };
 
   const handleSubmit = async () => {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
     setSubmitting(true);
     try {
-      await api.put('/change-password/', form);
+      await api.put("/change-password/", form);
       onClose();
     } catch (err: any) {
       const data = err.response?.data;
-      if (data && typeof data === 'object') {
+      if (data && typeof data === "object") {
         const mapped: Record<string, string> = {};
         for (const [key, val] of Object.entries(data)) {
-          mapped[key] = Array.isArray(val) ? (val as string[]).join(' ') : String(val);
+          mapped[key] = Array.isArray(val)
+            ? (val as string[]).join(" ")
+            : String(val);
         }
         setErrors(mapped);
       } else {
-        setErrors({ general: 'Đã có lỗi xảy ra. Vui lòng thử lại.' });
+        setErrors({ general: "Đã có lỗi xảy ra. Vui lòng thử lại." });
       }
     } finally {
       setSubmitting(false);
@@ -202,13 +289,15 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 40, scale: 0.97 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
         className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
       >
         {/* Header */}
@@ -218,8 +307,12 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               <Lock className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="font-black text-slate-900 text-base">Đổi mật khẩu</h2>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">Cập nhật mật khẩu đăng nhập</p>
+              <h2 className="font-black text-slate-900 text-base">
+                Đổi mật khẩu
+              </h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                Cập nhật mật khẩu đăng nhập
+              </p>
             </div>
           </div>
           <button
@@ -235,40 +328,69 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           {errors.general && (
             <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
               <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-red-700 font-medium">{errors.general}</p>
+              <p className="text-xs text-red-700 font-medium">
+                {errors.general}
+              </p>
             </div>
           )}
 
-          {([
-            { key: 'old_password',     label: 'Mật khẩu hiện tại', showKey: 'old' as const },
-            { key: 'new_password',     label: 'Mật khẩu mới',      showKey: 'new' as const },
-            { key: 'confirm_password', label: 'Xác nhận mật khẩu', showKey: 'confirm' as const },
-          ] as const).map(({ key, label, showKey }) => (
+          {(
+            [
+              {
+                key: "old_password",
+                label: "Mật khẩu hiện tại",
+                showKey: "old" as const,
+              },
+              {
+                key: "new_password",
+                label: "Mật khẩu mới",
+                showKey: "new" as const,
+              },
+              {
+                key: "confirm_password",
+                label: "Xác nhận mật khẩu",
+                showKey: "confirm" as const,
+              },
+            ] as const
+          ).map(({ key, label, showKey }) => (
             <div key={key} className="space-y-1.5">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-wider">{label}</label>
+              <label className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                {label}
+              </label>
               <div className="relative">
                 <input
-                  type={show[showKey] ? 'text' : 'password'}
+                  type={show[showKey] ? "text" : "password"}
                   value={form[key]}
-                  onChange={e => set(key, e.target.value)}
+                  onChange={(e) => set(key, e.target.value)}
                   className={cn(
-                    inputCls, 'pr-10',
-                    errors[key] && 'border-red-300 focus:ring-red-200 focus:border-red-400'
+                    inputCls,
+                    "pr-10",
+                    errors[key] &&
+                      "border-red-300 focus:ring-red-200 focus:border-red-400",
                   )}
-                  placeholder={key === 'old_password' ? '••••••••' : 'Tối thiểu 6 ký tự'}
-                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                  placeholder={
+                    key === "old_password" ? "••••••••" : "Tối thiểu 6 ký tự"
+                  }
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 />
                 <button
                   type="button"
-                  onClick={() => setShow(prev => ({ ...prev, [showKey]: !prev[showKey] }))}
+                  onClick={() =>
+                    setShow((prev) => ({ ...prev, [showKey]: !prev[showKey] }))
+                  }
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {show[showKey] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {show[showKey] ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
               {errors[key] && (
                 <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />{errors[key]}
+                  <AlertCircle className="h-3 w-3" />
+                  {errors[key]}
                 </p>
               )}
             </div>
@@ -288,8 +410,12 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             disabled={submitting}
             className="flex-1 py-2.5 rounded-xl bg-[#005ac2] text-white text-sm font-black hover:bg-[#004fab] transition-all shadow-lg shadow-[#005ac2]/20 disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            {submitting ? 'Đang lưu...' : 'Cập nhật'}
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            {submitting ? "Đang lưu..." : "Cập nhật"}
           </button>
         </div>
       </motion.div>
@@ -303,14 +429,17 @@ function StoreSettings() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<Partial<StoreData>>({});
   const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">(
+    "idle",
+  );
+  const [errorMsg, setErrorMsg] = useState("");
   const [locating, setLocating] = useState(false);
-  const [locError, setLocError] = useState('');
+  const [locError, setLocError] = useState("");
 
   useEffect(() => {
-    api.get('/stores/')
-      .then(r => setStores(r.data))
+    api
+      .get("/stores/")
+      .then((r) => setStores(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -318,20 +447,20 @@ function StoreSettings() {
   const startEdit = (store: StoreData) => {
     setEditingId(store.id);
     setForm({ ...store });
-    setSaveStatus('idle');
-    setErrorMsg('');
+    setSaveStatus("idle");
+    setErrorMsg("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setForm({});
-    setSaveStatus('idle');
+    setSaveStatus("idle");
   };
 
   const handleSave = async () => {
     if (!editingId) return;
     setSaving(true);
-    setSaveStatus('idle');
+    setSaveStatus("idle");
     try {
       const res = await api.patch(`/stores/${editingId}/`, {
         name: form.name,
@@ -341,31 +470,36 @@ function StoreSettings() {
         geo_longitude: form.geo_longitude,
         geo_radius_meters: Number(form.geo_radius_meters),
       });
-      setStores(prev => prev.map(s => s.id === editingId ? res.data : s));
-      setSaveStatus('success');
-      setTimeout(() => { setEditingId(null); setSaveStatus('idle'); }, 1200);
+      setStores((prev) => prev.map((s) => (s.id === editingId ? res.data : s)));
+      setSaveStatus("success");
+      setTimeout(() => {
+        setEditingId(null);
+        setSaveStatus("idle");
+      }, 1200);
     } catch (err: any) {
       const data = err.response?.data;
-      setErrorMsg(data ? Object.values(data).flat().join(', ') : 'Lưu thất bại.');
-      setSaveStatus('error');
+      setErrorMsg(
+        data ? Object.values(data).flat().join(", ") : "Lưu thất bại.",
+      );
+      setSaveStatus("error");
     } finally {
       setSaving(false);
     }
   };
 
   const set = (field: keyof StoreData, value: string) =>
-    setForm(prev => ({ ...prev, [field]: value }));
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      setLocError('Trình duyệt không hỗ trợ định vị.');
+      setLocError("Trình duyệt không hỗ trợ định vị.");
       return;
     }
     setLocating(true);
-    setLocError('');
+    setLocError("");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
           geo_latitude: pos.coords.latitude.toFixed(8),
           geo_longitude: pos.coords.longitude.toFixed(8),
@@ -374,13 +508,15 @@ function StoreSettings() {
       },
       (err) => {
         setLocError(
-          err.code === 1 ? 'Bị từ chối quyền truy cập vị trí.' :
-          err.code === 2 ? 'Không xác định được vị trí.' :
-          'Hết thời gian lấy vị trí.'
+          err.code === 1
+            ? "Bị từ chối quyền truy cập vị trí."
+            : err.code === 2
+              ? "Không xác định được vị trí."
+              : "Hết thời gian lấy vị trí.",
         );
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
@@ -401,198 +537,393 @@ function StoreSettings() {
         {!loading && stores.length === 0 && (
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 text-center">
             <Store className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-500">Chưa có cửa hàng nào</p>
+            <p className="text-sm font-bold text-slate-500">
+              Chưa có cửa hàng nào
+            </p>
           </div>
         )}
 
-        {!loading && stores.map(store => (
-          <div key={store.id} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            {/* Store header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-[#005ac2]/10 rounded-xl flex items-center justify-center">
-                  <Store className="h-5 w-5 text-[#005ac2]" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900">{store.name}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">ID #{store.id}</p>
-                </div>
-              </div>
-              {editingId !== store.id ? (
-                <button
-                  onClick={() => startEdit(store)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-[#005ac2] hover:text-white transition-all"
-                >
-                  <Edit3 className="h-4 w-4" /> Chỉnh sửa
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={cancelEdit}
-                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className={cn(
-                      'flex items-center gap-1.5 px-4 py-2 text-sm font-black rounded-xl transition-all',
-                      saveStatus === 'success'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-[#005ac2] text-white hover:bg-[#004fab] shadow-lg shadow-[#005ac2]/20'
-                    )}
-                  >
-                    {saving
-                      ? <Loader2 className="h-4 w-4 animate-spin" />
-                      : saveStatus === 'success'
-                        ? <><CheckCircle2 className="h-4 w-4" /> Đã lưu</>
-                        : <><Save className="h-4 w-4" /> Lưu</>}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* View mode */}
-            {editingId !== store.id && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-slate-50">
-                <InfoRow icon={<MapPin className="h-4 w-4" />} label="Địa chỉ" value={store.address} />
-                <InfoRow icon={<Phone className="h-4 w-4" />} label="Số điện thoại" value={store.phone || '—'} />
-                <InfoRow icon={<Navigation className="h-4 w-4" />} label="Tọa độ" value={`${store.geo_latitude}, ${store.geo_longitude}`} />
-                <InfoRow icon={<Navigation className="h-4 w-4" />} label="Bán kính check-in" value={`${store.geo_radius_meters} mét`} />
-              </div>
-            )}
-
-            {/* Edit mode */}
-            <AnimatePresence>
-              {editingId === store.id && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="px-6 py-5 space-y-4"
-                >
-                  {saveStatus === 'error' && (
-                    <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
-                      <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                      <p className="text-xs text-red-700 font-medium">{errorMsg}</p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="Tên cửa hàng *">
-                      <input
-                        value={form.name ?? ''}
-                        onChange={e => set('name', e.target.value)}
-                        className={inputCls}
-                        placeholder="Tên cửa hàng"
-                      />
-                    </Field>
-                    <Field label="Số điện thoại">
-                      <input
-                        value={form.phone ?? ''}
-                        onChange={e => set('phone', e.target.value)}
-                        className={inputCls}
-                        placeholder="0912345678"
-                      />
-                    </Field>
+        {!loading &&
+          stores.map((store) => (
+            <div
+              key={store.id}
+              className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden"
+            >
+              {/* Store header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-[#005ac2]/10 rounded-xl flex items-center justify-center">
+                    <Store className="h-5 w-5 text-[#005ac2]" />
                   </div>
-
-                  <Field label="Địa chỉ *">
-                    <input
-                      value={form.address ?? ''}
-                      onChange={e => set('address', e.target.value)}
-                      className={inputCls}
-                      placeholder="Số nhà, đường, quận, thành phố"
-                    />
-                  </Field>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Field label="Vĩ độ (Latitude)">
-                      <input
-                        type="number"
-                        step="0.00000001"
-                        value={form.geo_latitude ?? ''}
-                        onChange={e => set('geo_latitude', e.target.value)}
-                        className={inputCls}
-                        placeholder="10.77609"
-                      />
-                    </Field>
-                    <Field label="Kinh độ (Longitude)">
-                      <input
-                        type="number"
-                        step="0.00000001"
-                        value={form.geo_longitude ?? ''}
-                        onChange={e => set('geo_longitude', e.target.value)}
-                        className={inputCls}
-                        placeholder="106.69508"
-                      />
-                    </Field>
-                    <Field label="Bán kính check-in (m)">
-                      <input
-                        type="number"
-                        min="10"
-                        max="2000"
-                        value={form.geo_radius_meters ?? ''}
-                        onChange={e => set('geo_radius_meters', e.target.value)}
-                        className={inputCls}
-                        placeholder="100"
-                      />
-                    </Field>
+                  <div>
+                    <h3 className="font-black text-slate-900">{store.name}</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      ID #{store.id}
+                    </p>
                   </div>
-
-                  <div className="flex items-center gap-3">
+                </div>
+                {editingId !== store.id ? (
+                  <button
+                    onClick={() => startEdit(store)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-[#005ac2] hover:text-white transition-all"
+                  >
+                    <Edit3 className="h-4 w-4" /> Chỉnh sửa
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
                     <button
-                      type="button"
-                      onClick={handleGetLocation}
-                      disabled={locating}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-[#005ac2] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={cancelEdit}
+                      className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
                     >
-                      {locating
-                        ? <Loader2 className="h-4 w-4 animate-spin" />
-                        : <Navigation className="h-4 w-4" />}
-                      {locating ? 'Đang lấy vị trí...' : 'Lấy vị trí hiện tại'}
+                      <X className="h-5 w-5" />
                     </button>
-                    {locError && (
-                      <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3.5 w-3.5" /> {locError}
-                      </p>
-                    )}
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className={cn(
+                        "flex items-center gap-1.5 px-4 py-2 text-sm font-black rounded-xl transition-all",
+                        saveStatus === "success"
+                          ? "bg-green-500 text-white"
+                          : "bg-[#005ac2] text-white hover:bg-[#004fab] shadow-lg shadow-[#005ac2]/20",
+                      )}
+                    >
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : saveStatus === "success" ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" /> Đã lưu
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" /> Lưu
+                        </>
+                      )}
+                    </button>
                   </div>
+                )}
+              </div>
 
-                  <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                    <Navigation className="h-3.5 w-3.5" />
-                    Tọa độ và bán kính xác định khu vực hợp lệ để nhân viên thực hiện check-in QR.
-                  </p>
-                </motion.div>
+              {/* View mode */}
+              {editingId !== store.id && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-slate-50">
+                  <InfoRow
+                    icon={<MapPin className="h-4 w-4" />}
+                    label="Địa chỉ"
+                    value={store.address}
+                  />
+                  <InfoRow
+                    icon={<Phone className="h-4 w-4" />}
+                    label="Số điện thoại"
+                    value={store.phone || "—"}
+                  />
+                  <InfoRow
+                    icon={<Navigation className="h-4 w-4" />}
+                    label="Tọa độ"
+                    value={`${store.geo_latitude}, ${store.geo_longitude}`}
+                  />
+                  <InfoRow
+                    icon={<Navigation className="h-4 w-4" />}
+                    label="Bán kính check-in"
+                    value={`${store.geo_radius_meters} mét`}
+                  />
+                </div>
               )}
-            </AnimatePresence>
-          </div>
-        ))}
+
+              {/* Edit mode */}
+              <AnimatePresence>
+                {editingId === store.id && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="px-6 py-5 space-y-4"
+                  >
+                    {saveStatus === "error" && (
+                      <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
+                        <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                        <p className="text-xs text-red-700 font-medium">
+                          {errorMsg}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label="Tên cửa hàng *">
+                        <input
+                          value={form.name ?? ""}
+                          onChange={(e) => set("name", e.target.value)}
+                          className={inputCls}
+                          placeholder="Tên cửa hàng"
+                        />
+                      </Field>
+                      <Field label="Số điện thoại">
+                        <input
+                          value={form.phone ?? ""}
+                          onChange={(e) => set("phone", e.target.value)}
+                          className={inputCls}
+                          placeholder="0912345678"
+                        />
+                      </Field>
+                    </div>
+
+                    <Field label="Địa chỉ *">
+                      <input
+                        value={form.address ?? ""}
+                        onChange={(e) => set("address", e.target.value)}
+                        className={inputCls}
+                        placeholder="Số nhà, đường, quận, thành phố"
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <Field label="Vĩ độ (Latitude)">
+                        <input
+                          type="number"
+                          step="0.00000001"
+                          value={form.geo_latitude ?? ""}
+                          onChange={(e) => set("geo_latitude", e.target.value)}
+                          className={inputCls}
+                          placeholder="10.77609"
+                        />
+                      </Field>
+                      <Field label="Kinh độ (Longitude)">
+                        <input
+                          type="number"
+                          step="0.00000001"
+                          value={form.geo_longitude ?? ""}
+                          onChange={(e) => set("geo_longitude", e.target.value)}
+                          className={inputCls}
+                          placeholder="106.69508"
+                        />
+                      </Field>
+                      <Field label="Bán kính check-in (m)">
+                        <input
+                          type="number"
+                          min="10"
+                          max="2000"
+                          value={form.geo_radius_meters ?? ""}
+                          onChange={(e) =>
+                            set("geo_radius_meters", e.target.value)
+                          }
+                          className={inputCls}
+                          placeholder="100"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleGetLocation}
+                        disabled={locating}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-[#005ac2] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {locating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Navigation className="h-4 w-4" />
+                        )}
+                        {locating
+                          ? "Đang lấy vị trí..."
+                          : "Lấy vị trí hiện tại"}
+                      </button>
+                      {locError && (
+                        <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5" /> {locError}
+                        </p>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                      <Navigation className="h-3.5 w-3.5" />
+                      Tọa độ và bán kính xác định khu vực hợp lệ để nhân viên
+                      thực hiện check-in QR.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
       </div>
     </div>
   );
 }
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex items-start gap-3 px-6 py-4">
       <div className="text-slate-400 mt-0.5 shrink-0">{icon}</div>
       <div>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          {label}
+        </p>
         <p className="text-sm font-bold text-slate-700 mt-0.5">{value}</p>
       </div>
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-black text-slate-400 uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-black text-slate-400 uppercase tracking-wider">
+        {label}
+      </label>
       {children}
     </div>
   );
 }
 
-const inputCls = 'w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-[#005ac2]/20 focus:border-[#005ac2]/40 focus:outline-none placeholder:text-slate-400 transition-colors';
+function TelegramModal({ onClose }: { onClose: () => void }) {
+  const [chatId, setChatId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.get("/me/").then((r) => {
+      setChatId(r.data.telegram_chat_id ?? "");
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!chatId.trim()) {
+      setError("Vui lòng nhập Chat ID.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.patch("/me/", { telegram_chat_id: chatId.trim() });
+      setSuccess(true);
+      setTimeout(onClose, 1000);
+    } catch {
+      setError("Lưu thất bại. Vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.patch("/me/", { telegram_chat_id: "" });
+      setChatId("");
+      setSuccess(false);
+    } catch {
+      setError("Có lỗi xảy ra.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+      >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-sky-100 rounded-2xl flex items-center justify-center">
+              <Send className="h-5 w-5 text-sky-600" />
+            </div>
+            <div>
+              <h2 className="font-black text-slate-900 text-base">Kết nối Telegram</h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Nhận thông báo ca làm qua Telegram</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="bg-sky-50 border border-sky-100 rounded-2xl p-4 space-y-2">
+            <p className="text-xs font-black text-sky-700 uppercase tracking-wider">Hướng dẫn lấy Chat ID</p>
+            <ol className="text-xs text-sky-800 font-medium space-y-1.5 list-decimal list-inside">
+              <li>Mở Telegram, tìm kiếm <span className="font-black">@userinfobot</span></li>
+              <li>Nhắn bất kỳ tin nhắn nào cho bot đó</li>
+              <li>Bot sẽ trả về thông tin gồm <span className="font-black">Id</span> — đó là Chat ID của bạn</li>
+              <li>Sao chép số đó và dán vào ô bên dưới</li>
+            </ol>
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700 font-medium">{error}</p>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Telegram Chat ID</label>
+            <input
+              value={chatId}
+              onChange={(e) => { setChatId(e.target.value); setError(""); }}
+              className={inputCls}
+              placeholder="Ví dụ: 123456789"
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+            />
+          </div>
+
+          {chatId && !success && (
+            <button
+              onClick={handleDisconnect}
+              disabled={submitting}
+              className="text-xs text-red-500 font-bold hover:text-red-700 transition-colors"
+            >
+              Xoá kết nối Telegram
+            </button>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+            Hủy
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={submitting || success}
+            className="flex-1 py-2.5 rounded-xl bg-sky-500 text-white text-sm font-black hover:bg-sky-600 transition-all shadow-lg shadow-sky-500/20 disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : success ? (
+              <><CheckCircle2 className="h-4 w-4" /> Đã lưu</>
+            ) : (
+              <><Send className="h-4 w-4" /> Lưu</>
+            )}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+const inputCls =
+  "w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-[#005ac2]/20 focus:border-[#005ac2]/40 focus:outline-none placeholder:text-slate-400 transition-colors";

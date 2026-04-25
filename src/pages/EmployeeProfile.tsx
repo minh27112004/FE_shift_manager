@@ -63,8 +63,8 @@ export default function EmployeeProfile() {
       setIsEditing(false);
       await fetchEmployee();
       toast.success('Cập nhật hồ sơ thành công!');
-    } catch (error: any) {
-      toast.error('Cập nhật thất bại: ' + (error.response?.data?.detail || 'Lỗi hệ thống'));
+    } catch {
+      // axios interceptor đã tự toast lỗi từ backend
     }
   };
 

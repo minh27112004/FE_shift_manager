@@ -283,8 +283,8 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
     try {
       await api.post('/attendance/records/checkout/', { shift_id: activeAttendance.shift });
       setActiveAttendance(null);
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Lỗi khi check-out');
+    } catch {
+      // axios interceptor đã tự toast lỗi từ backend
     }
   };
 
