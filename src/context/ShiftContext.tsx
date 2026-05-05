@@ -66,6 +66,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     is_emergency?: boolean;
     max_workers?: number;
     salary_multiplier?: string;
+    store?: number;
   }) => {
     const pad = (t: string) => t.length === 5 ? t + ':00' : t;
     const payload = {
@@ -77,7 +78,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
       is_emergency: shiftData.is_emergency ?? false,
       max_workers: shiftData.max_workers ?? 1,
       salary_multiplier: shiftData.salary_multiplier ?? '1.00',
-      store: 1,
+      store: shiftData.store ?? 1,
     };
     await api.post('/shifts/', payload);
     await fetchShifts();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   QrCode, 
@@ -18,11 +18,14 @@ export default function QRScanner() {
   const [status, setStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [shiftInfo, setShiftInfo] = useState<any>(null);
+  const isScanningRef = useRef(false);
 
   const navigate = useNavigate();
 
   const handleScanMock = async (tokenString: string) => {
-    if (!tokenString) return;
+    if (!tokenString || isScanningRef.current) return;
+    
+    isScanningRef.current = true;
     setStatus('scanning');
 
     let latitude: number;
@@ -37,6 +40,7 @@ export default function QRScanner() {
     } catch {
       setStatus('error');
       setMessage('Không lấy được vị trí GPS. Vui lòng cho phép truy cập vị trí và thử lại.');
+      isScanningRef.current = false;
       return;
     }
 
@@ -57,6 +61,8 @@ export default function QRScanner() {
       console.error(error);
       setStatus('error');
       setMessage(error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || 'Mã QR không hợp lệ hoặc đã hết hạn.');
+    } finally {
+      isScanningRef.current = false;
     }
   };
 

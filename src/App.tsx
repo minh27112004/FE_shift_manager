@@ -13,6 +13,7 @@ import Payroll from './pages/Payroll';
 import AIAssistant from './pages/AIAssistant';
 import EmployeeProfile from './pages/EmployeeProfile';
 import EmployeeManagement from './pages/EmployeeManagement';
+import ShiftManagement from './pages/ShiftManagement';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import QRScanner from './pages/QRScanner';
@@ -55,13 +56,21 @@ export default function App() {
                           </ProtectedRoute>
                         } 
                       />
-                      <Route 
-                        path="/employees" 
+                      <Route
+                        path="/employees"
                         element={
                           <ProtectedRoute allowedRoles={['admin', 'manager']}>
                             <EmployeeManagement />
                           </ProtectedRoute>
-                        } 
+                        }
+                      />
+                      <Route
+                        path="/shift-management"
+                        element={
+                          <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                            <ShiftManagement />
+                          </ProtectedRoute>
+                        }
                       />
                       
                       <Route path="/profile/:id" element={<EmployeeProfile />} />

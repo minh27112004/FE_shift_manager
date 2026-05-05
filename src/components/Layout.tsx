@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   QrCode,
-  ClipboardList
+  ClipboardList,
+  TableProperties,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +62,7 @@ export default function Layout({ children }: LayoutProps) {
   const adminNavItems = [
     { icon: LayoutDashboard, label: 'Bảng điều khiển', path: '/' },
     { icon: Calendar, label: 'Lịch làm việc', path: '/calendar' },
+    { icon: TableProperties, label: 'Quản lý ca làm', path: '/shift-management' },
     { icon: Bell, label: 'Thông báo', path: '/notifications', badge: unreadCount },
     { icon: UserPlus, label: 'Phân ca & Đăng ký', path: '/registration' },
     { icon: CreditCard, label: 'Bảng lương', path: '/payroll' },
