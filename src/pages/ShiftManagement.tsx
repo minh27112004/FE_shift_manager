@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   PlusCircle, Search, Pencil, Trash2, Loader2,
   Clock, CalendarCheck, Users, ChevronLeft, ChevronRight,
-  RotateCcw,
+  RotateCcw, CheckSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
@@ -117,6 +117,29 @@ export default function ShiftManagement() {
     }
   };
 
+  const isForceCheckoutRef = useRef(false);
+
+  const handleForceCheckoutAll = async () => {
+    if (isForceCheckoutRef.current) return;
+    
+    isForceCheckoutRef.current = true;
+    
+    try {
+      const confirmed = await toast.confirm(
+        'Hệ thống sẽ ép checkout toàn bộ nhân viên đang treo ở các ca ĐÃ KẾT THÚC. Bạn có chắc chắn?',
+        'Chốt ca cuối ngày'
+      );
+      if (!confirmed) return; 
+
+      await api.post('/attendance/records/force-checkout-all/');
+      fetchShifts();
+    } catch (err: any) {
+      console.error("Lỗi chốt ca:", err);
+    } finally {
+      isForceCheckoutRef.current = false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
@@ -191,13 +214,22 @@ export default function ShiftManagement() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Quản lý ca làm việc</h1>
           <p className="text-slate-500 font-medium mt-1">Tạo, chỉnh sửa và xóa ca làm việc</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 bg-[#005ac2] text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#004fab] active:scale-95 transition-all"
-        >
-          <PlusCircle className="h-5 w-5" />
-          Tạo ca mới
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleForceCheckoutAll}
+            className="flex items-center gap-2 bg-amber-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-amber-600 active:scale-95 transition-all"
+          >
+            <CheckSquare className="h-5 w-5" />
+            Chốt ca cuối ngày
+          </button>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 bg-[#005ac2] text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#004fab] active:scale-95 transition-all"
+          >
+            <PlusCircle className="h-5 w-5" />
+            Tạo ca mới
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

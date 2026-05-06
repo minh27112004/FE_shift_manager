@@ -45,7 +45,7 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
       const pending = r.data.filter((s: any) => s.status === 'pending' || s.status === 'partner_accepted');
       setPendingSwaps(pending.length);
     }).catch(() => {});
-    api.get('/notifications/').then(r => setRecentActivity(r.data.slice(0, 4))).catch(() => {});
+    api.get('/notifications/').then(r => setRecentActivity(r.data.slice(0, 5))).catch(() => {});
   }, []);
 
   const todayStr = new Date().toISOString().split('T')[0];
