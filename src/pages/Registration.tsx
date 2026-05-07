@@ -30,7 +30,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
 import { toast } from '../lib/toast';
 
-type Tab = 'wishlist' | 'emergency' | 'handoff' | 'swap';
+type Tab = 'wishlist' | 'emergency' | 'handoff' | 'swap' | 'myshifts';
 
 interface SwapRequest {
   id: number;
@@ -364,10 +364,13 @@ function AdminCard({ badge, badgeColor, title, meta, person, loading, onApprove,
 // ─── Employee registration ─────────────────────────────────────────────────────
 
 function EmployeeRegistration() {
-  const { shifts, claimShift, isLoading } = useShifts();
+  const { shifts, claimShift, unclaimShift, isLoading } = useShifts();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('wishlist');
   const [claimingId, setClaimingId] = useState<string | number | null>(null);
+  const [unclaimingId, setUnclaimingId] = useState<string | number | null>(null);
+  const [myShifts, setMyShifts] = useState<any[]>([]);
+  const [myShiftsLoading, setMyShiftsLoading] = useState(false);
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
   const [swapLoading, setSwapLoading] = useState(false);
   const [respondingId, setRespondingId] = useState<number | null>(null);
@@ -377,14 +380,18 @@ function EmployeeRegistration() {
   const wishlistShifts = shifts.filter(s =>
     !s.backendData?.is_emergency &&
     s.backendData?.is_open &&
-    !s.backendData?.assignments?.some((a: any) => String(a.user ?? a.user_id) === String(user?.id))
+    !s.backendData?.assignments?.some((a: any) =>
+      String(a.user ?? a.user_id) === String(user?.id) && a.status !== 'cancelled'
+    )
   );
 
   // Ca khẩn cấp: emergency + open, not already my shift
   const emergencyShifts = shifts.filter(s =>
     s.backendData?.is_emergency &&
     s.backendData?.is_open &&
-    !s.backendData?.assignments?.some((a: any) => String(a.user ?? a.user_id) === String(user?.id))
+    !s.backendData?.assignments?.some((a: any) =>
+      String(a.user ?? a.user_id) === String(user?.id) && a.status !== 'cancelled'
+    )
   );
 
   // Ca nhượng: transfer requests where I am the partner (someone is giving me their shift)
@@ -404,13 +411,28 @@ function EmployeeRegistration() {
         const res = await api.get('/shifts/swap-requests/');
         setSwapRequests(res.data);
       } catch {
-        // silently fail
       } finally {
         setSwapLoading(false);
       }
     };
     fetchSwapRequests();
   }, []);
+
+  const fetchMyShifts = async () => {
+    setMyShiftsLoading(true);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await api.get(`/shifts/my-shifts/?from=${today}`);
+      setMyShifts(res.data);
+    } catch {
+    } finally {
+      setMyShiftsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'myshifts') fetchMyShifts();
+  }, [activeTab]);
 
   const handleClaim = async (shiftId: string | number) => {
     if (claimingId) return;
@@ -438,6 +460,19 @@ function EmployeeRegistration() {
     }
   };
 
+  const handleUnclaim = async (shiftId: string | number) => {
+    if (unclaimingId) return;
+    if (!await toast.confirm('Bạn có chắc chắn muốn hủy đăng ký ca này?', 'Hủy đăng ký')) return;
+    setUnclaimingId(shiftId);
+    try {
+      await unclaimShift(shiftId);
+      await fetchMyShifts();
+    } catch {
+    } finally {
+      setUnclaimingId(null);
+    }
+  };
+
   const handleSwapRespond = async (swapId: number, accept: boolean) => {
     if (respondingId) return;
     const action = accept ? 'đồng ý' : 'từ chối';
@@ -461,6 +496,7 @@ function EmployeeRegistration() {
   const tabs: { id: Tab; label: string; icon: any; count: number; color: string; badgeColor: string }[] = [
     { id: 'wishlist', label: 'Nguyện vọng', icon: Bookmark, count: wishlistShifts.length, color: 'text-[#005ac2]', badgeColor: 'bg-[#005ac2]' },
     { id: 'emergency', label: 'Khẩn cấp', icon: AlertTriangle, count: emergencyShifts.length, color: 'text-red-600', badgeColor: 'bg-red-500' },
+    { id: 'myshifts', label: 'Ca của tôi', icon: CalendarIcon, count: 0, color: 'text-green-600', badgeColor: 'bg-green-500' },
     { id: 'handoff', label: 'Ca nhượng', icon: ArrowLeftRight, count: handoffRequests.length, color: 'text-amber-600', badgeColor: 'bg-amber-500' },
     { id: 'swap', label: 'Ca đổi', icon: RefreshCw, count: swapExchangeRequests.length, color: 'text-purple-600', badgeColor: 'bg-purple-500' },
   ];
@@ -567,6 +603,50 @@ function EmployeeRegistration() {
                       onClaim={() => handleClaimEmergency(shift.id)}
                     />
                   ))}
+                </motion.div>
+              )}
+
+              {/* === Ca của tôi === */}
+              {activeTab === 'myshifts' && (
+                <motion.div key="myshifts" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-3">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Ca đã đăng ký từ hôm nay</p>
+                  {myShiftsLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-green-500" /></div>}
+                  {!myShiftsLoading && myShifts.length === 0 && (
+                    <div className="text-center py-10 text-slate-400 text-sm font-medium">Bạn chưa có ca nào được xác nhận.</div>
+                  )}
+                  {!myShiftsLoading && myShifts.map((shift: any) => {
+                    const shiftStart = new Date(`${shift.date}T${shift.start_time}`);
+                    const hoursUntil = (shiftStart.getTime() - Date.now()) / 3600000;
+                    const canCancel = hoursUntil >= 24;
+                    return (
+                      <div key={shift.id} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-2xl bg-green-50 border border-green-100 flex flex-col items-center justify-center shrink-0">
+                            <span className="text-sm font-black text-green-700">{new Date(shift.date).getDate()}</span>
+                            <span className="text-[10px] font-bold text-green-500 uppercase">T{new Date(shift.date).getMonth() + 1}</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-900">{shift.note || shift.start_time?.slice(0, 5)}</p>
+                            <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                              <Clock className="h-3 w-3" />
+                              {shift.start_time?.slice(0, 5)} – {shift.end_time?.slice(0, 5)}
+                            </p>
+                            {!canCancel && (
+                              <p className="text-[10px] text-amber-500 font-bold mt-0.5">Còn {hoursUntil.toFixed(1)}h — không thể hủy</p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleUnclaim(shift.id)}
+                          disabled={!canCancel || unclaimingId === shift.id}
+                          className="px-3 py-1.5 rounded-xl text-xs font-black border transition-all disabled:opacity-40 disabled:cursor-not-allowed border-red-200 text-red-500 hover:bg-red-50 flex items-center gap-1.5"
+                        >
+                          {unclaimingId === shift.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                          Hủy
+                        </button>
+                      </div>
+                    );
+                  })}
                 </motion.div>
               )}
 
@@ -934,7 +1014,8 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
 
   // Step 2 date range mode
   const today = new Date().toISOString().slice(0, 10);
-  const [fromDate, setFromDate] = useState(today);
+  const minSwapDate = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
+  const [fromDate, setFromDate] = useState(minSwapDate);
   const [toDate, setToDate] = useState('');
   const [rangeShifts, setRangeShifts] = useState<CandidateShift[]>([]);
   const [rangeLoading, setRangeLoading] = useState(false);
@@ -950,7 +1031,15 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     api.get('/shifts/my-shifts/', { params: { from: today } })
-      .then(r => setMyShifts(r.data))
+      .then(r => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+        const eligible = r.data.filter((s: any) => s.date > tomorrowStr ||
+          (s.date === tomorrowStr && (s.start_time ?? '23:59:59') > tomorrow.toTimeString().slice(0, 8))
+        );
+        setMyShifts(eligible);
+      })
       .catch(() => {})
       .finally(() => setMyShiftsLoading(false));
   }, [today]);
@@ -1075,7 +1164,7 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
                 <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Chọn ca của bạn muốn đổi</p>
                 {myShiftsLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-purple-500" /></div>}
                 {!myShiftsLoading && myShifts.length === 0 && (
-                  <div className="text-center py-8 text-sm text-slate-500 font-medium">Bạn chưa có ca nào được xác nhận.</div>
+                  <div className="text-center py-8 text-sm text-slate-500 font-medium">Không có ca nào đủ điều kiện đổi (yêu cầu trước ít nhất 1 ngày).</div>
                 )}
                 {myShifts.map(shift => (
                   <button
@@ -1171,7 +1260,7 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Từ ngày</label>
-                        <input type="date" value={fromDate} min={today} onChange={e => setFromDate(e.target.value)} className={inputCls} />
+                        <input type="date" value={fromDate} min={minSwapDate} onChange={e => setFromDate(e.target.value)} className={inputCls} />
                       </div>
                       <div>
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Đến ngày</label>

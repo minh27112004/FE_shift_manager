@@ -8,9 +8,6 @@ import {
   Wallet,
   TrendingUp,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
   Bed,
   History,
   Timer,
@@ -37,15 +34,12 @@ export default function Dashboard() {
 function AdminDashboard({ shifts }: { shifts: any[] }) {
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
   const [pendingSwaps, setPendingSwaps] = useState<number | null>(null);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-
   useEffect(() => {
     api.get('/employees/').then(r => setEmployeeCount(r.data.length)).catch(() => {});
     api.get('/shifts/swap-requests/').then(r => {
       const pending = r.data.filter((s: any) => s.status === 'pending' || s.status === 'partner_accepted');
       setPendingSwaps(pending.length);
     }).catch(() => {});
-    api.get('/notifications/').then(r => setRecentActivity(r.data.slice(0, 5))).catch(() => {});
   }, []);
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -86,24 +80,6 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
     },
   ];
 
-  // Build current week days dynamically
-  const getWeekDays = () => {
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0=Sun
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
-    const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
-    return dayNames.map((name, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      return { name, date: d.toISOString().split('T')[0] };
-    });
-  };
-  const weekDays = getWeekDays();
-  const weekStart = new Date(weekDays[0].date);
-  const weekEnd = new Date(weekDays[6].date);
-  const weekLabel = `${weekStart.getDate()} tháng ${weekStart.getMonth() + 1} — ${weekEnd.getDate()} tháng ${weekEnd.getMonth() + 1}, ${weekEnd.getFullYear()}`;
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -141,130 +117,48 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
         ))}
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-6 xl:gap-8 items-start">
-        <section className="w-full xl:flex-1 min-w-0">
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-              <div>
-                <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">Lịch làm việc hàng tuần</h2>
-                <p className="text-sm sm:text-base text-slate-500">{weekLabel}</p>
-              </div>
-              <div className="flex gap-2">
-                <button className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button className="px-3 py-1.5 bg-slate-100 text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-200">Hôm nay</button>
-              </div>
-            </div>
-
-            {/* Scrollable on mobile */}
-            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <div className="min-w-[560px]">
-                <div className="grid grid-cols-7 gap-2">
-                  {weekDays.map((day, i) => (
-                    <div key={day.name} className="text-center pb-3 border-b border-slate-100">
-                      <span className={cn(
-                        "block text-xs font-black uppercase tracking-widest mb-1",
-                        i === 2 ? "text-[#005ac2]" : "text-slate-400"
-                      )}>{day.name}</span>
-                      <span className={cn(
-                        "text-lg font-extrabold",
-                        i === 2 ? "text-[#005ac2]" : "text-slate-900"
-                      )}>{day.date.split('-')[2]}</span>
-                    </div>
-                  ))}
-
-                  {weekDays.map((day) => {
-                    const dayShifts = shifts.filter(s => s.date === day.date);
-                    return (
-                      <div key={day.date} className="space-y-2 pt-3">
-                        {dayShifts.length > 0 ? (
-                          dayShifts.map((shift) => (
-                            <div key={shift.id} className={cn(
-                              "p-2 rounded-lg border-l-4",
-                              shift.type === 'primary' ? "bg-[#d8e2ff]/40 border-[#005ac2]" :
-                              shift.type === 'tertiary' ? "bg-[#d3ceef]/30 border-[#5f5c78]" : "bg-[#fe8983]/20 border-[#9f403d]"
-                            )}>
-                              <p className={cn(
-                                "text-sm font-bold uppercase",
-                                shift.type === 'primary' ? "text-[#005ac2]" :
-                                shift.type === 'tertiary' ? "text-[#5f5c78]" : "text-[#9f403d]"
-                              )}>{shift.time.split(' ')[0]}</p>
-                              <p className="text-sm font-semibold mt-0.5 truncate">{shift.name}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-2 bg-slate-50 rounded-lg text-center py-6">
-                            <Bed className="h-4 w-4 mx-auto text-slate-200" />
-                          </div>
-                        )}
-                        <div className="p-2 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center opacity-40 hover:opacity-100 cursor-pointer transition-opacity">
-                          <Plus className="h-3 w-3" />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <aside className="w-full xl:w-80 xl:shrink-0">
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-extrabold tracking-tight text-slate-900 uppercase">Hoạt động gần đây</h2>
-              <button className="text-[#005ac2] text-sm font-semibold hover:underline">Xem tất cả</button>
-            </div>
-            <div className="space-y-4">
-              {recentActivity.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">Chưa có hoạt động nào.</p>
-              ) : recentActivity.map((notif: any, i: number) => (
-                <div key={notif.id ?? i} className="flex gap-3 relative">
-                  {i !== recentActivity.length - 1 && (
-                    <div className="absolute left-[15px] top-8 bottom-0 w-[1px] bg-slate-100"></div>
-                  )}
-                  <div className="h-8 w-8 rounded-full bg-[#d8e2ff] text-[#005ac2] flex items-center justify-center shrink-0 z-10">
-                    <Bell className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">{notif.title}</p>
-                    <p className="text-base text-slate-500 leading-relaxed">{notif.message}</p>
-                    <p className="text-sm text-slate-400 mt-1">{new Date(notif.created_at).toLocaleString('vi-VN')}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {/* FAB — hidden on mobile (overlaps bottom nav) */}
-      <button className="hidden lg:flex fixed bottom-8 right-8 h-14 w-14 bg-[#005ac2] text-white rounded-full shadow-2xl items-center justify-center hover:scale-110 active:scale-95 transition-transform z-40">
-        <Plus className="h-6 w-6" />
-      </button>
     </motion.div>
   );
 }
 
-function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
+function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
   const navigate = useNavigate();
   const [activeAttendance, setActiveAttendance] = useState<any>(null);
+  const [completedShifts, setCompletedShifts] = useState<number>(0);
+  const [totalRegistered, setTotalRegistered] = useState<number>(0);
+  const [upcomingShifts, setUpcomingShifts] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchAttendance = async () => {
-      try {
-        const response = await api.get('/attendance/records/me/');
-        const ongoing = response.data.find((r: any) => !r.checkout_at);
-        setActiveAttendance(ongoing ?? null);
-      } catch {
-        // silently fail
-      }
-    };
-    if (user) fetchAttendance();
+    if (!user) return;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+    const from = `${year}-${month}-01`;
+    const to = `${year}-${month}-${lastDay}`;
+    const todayStr = now.toISOString().split('T')[0];
+
+    api.get(`/attendance/records/me/?from=${from}&to=${to}`).then(r => {
+      const records: any[] = r.data;
+      const ongoing = records.find((rec: any) => rec.checkin_at && !rec.checkout_at);
+      setActiveAttendance(ongoing ?? null);
+      setCompletedShifts(records.filter((rec: any) => rec.checkin_at && rec.checkout_at).length);
+    }).catch(() => {});
+
+    api.get(`/shifts/my-shifts/?from=${todayStr}`).then(r => {
+      const myShifts: any[] = r.data;
+      setTotalRegistered(myShifts.length);
+      const todayShifts = myShifts
+        .filter((s: any) => s.date === todayStr)
+        .map((s: any) => ({
+          id: s.id,
+          name: s.store_address || s.store_name || 'Hệ thống',
+          time: `${s.start_time?.substring(0, 5)} - ${s.end_time?.substring(0, 5)}`,
+          date: s.date,
+          type: s.is_emergency ? 'error' : 'tertiary',
+        }));
+      setUpcomingShifts(todayShifts);
+    }).catch(() => {});
   }, [user]);
 
   const handleCheckOut = async () => {
@@ -288,23 +182,14 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
     }
   };
 
-  // Filter shifts specifically for this employee
-  const myShifts = shifts.filter(s =>
-    s.backendData?.assignments?.some((a: any) => String(a.user ?? a.user_id) === String(user?.id))
-  );
-
-  const upcomingShifts = myShifts.filter(s => new Date(s.date) >= new Date()).slice(0, 3);
-
-  const completedShifts = myShifts.filter(s => new Date(s.date) < new Date()).length;
-
   const stats = [
     {
-      label: 'Ca làm sắp tới',
+      label: 'Ca làm hôm nay',
       value: upcomingShifts.length.toString(),
-      trend: 'Trong tuần này',
+      trend: 'Ngày hôm nay',
       icon: Clock,
       color: 'bg-[#d8e2ff] text-[#005ac2]',
-      tag: 'Cá nhân'
+      tag: 'Hôm nay'
     },
     {
       label: 'Ca đã hoàn thành',
@@ -316,7 +201,7 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
     },
     {
       label: 'Tổng ca đã đăng ký',
-      value: myShifts.length.toString(),
+      value: totalRegistered.toString(),
       trend: 'Ca được xác nhận',
       icon: Wallet,
       color: 'bg-[#e2e2e9] text-[#3e3f45]',
@@ -364,7 +249,7 @@ function EmployeeDashboard({ shifts, user }: { shifts: any[], user: any }) {
           {/* Upcoming Shifts */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-extrabold tracking-tight text-slate-900">Ca làm sắp diễn ra</h2>
+              <h2 className="text-lg font-extrabold tracking-tight text-slate-900">Ca làm hôm nay</h2>
               <button 
                 onClick={() => navigate('/calendar')}
                 className="text-[#005ac2] text-xs font-semibold hover:underline"

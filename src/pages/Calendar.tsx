@@ -98,6 +98,7 @@ export default function CalendarPage() {
   const [createError, setCreateError] = useState('');
   const [qrShift, setQrShift] = useState<{ id: number; label: string; time: string; date: string } | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showBulkCreate, setShowBulkCreate] = useState(false);
   const [detailShift, setDetailShift] = useState<ReturnType<typeof transformShift> | null>(null);
 
   // Employee-specific: fetch personal shifts from dedicated endpoint
@@ -221,6 +222,13 @@ export default function CalendarPage() {
                 Template
               </button>
               <button
+                onClick={() => setShowBulkCreate(true)}
+                className="bg-white border border-[#005ac2] text-[#005ac2] px-4 py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-50 active:scale-95 transition-all flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Tạo hàng loạt
+              </button>
+              <button
                 onClick={() => { setCreateForm(EMPTY_FORM); setCreateError(''); setShowCreate(true); }}
                 className="bg-[#005ac2] text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#004fab] active:scale-95 transition-all flex items-center gap-2"
               >
@@ -327,6 +335,7 @@ export default function CalendarPage() {
       {/* Template Manager Modal */}
       <AnimatePresence>
         {showTemplates && <TemplateManagerModal onClose={() => setShowTemplates(false)} />}
+        {showBulkCreate && <BulkShiftModal onClose={() => setShowBulkCreate(false)} onCreated={() => { setShowBulkCreate(false); }} />}
       </AnimatePresence>
 
       {/* QR Modal */}
@@ -383,41 +392,6 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
-          <div className="text-center">
-            {role === 'employee' ? (
-              <>
-                <div className="text-4xl font-black text-[#005ac2]">{displayShifts.length}</div>
-                <div className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-wider">Ca tháng này</div>
-                <p className="text-sm text-slate-400 mt-3">
-                  {displayShifts.filter(s => s.backendData?.is_emergency).length} ca khẩn cấp
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="text-4xl font-black text-[#005ac2]">
-                  {shifts.length > 0
-                    ? Math.round((shifts.filter(s => !s.backendData?.is_open).length / shifts.length) * 100)
-                    : 0}%
-                </div>
-                <div className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-wider">Độ phủ tháng này</div>
-                <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#005ac2] transition-all"
-                    style={{
-                      width: shifts.length > 0
-                        ? `${Math.round((shifts.filter(s => !s.backendData?.is_open).length / shifts.length) * 100)}%`
-                        : '0%'
-                    }}
-                  ></div>
-                </div>
-                <p className="text-sm text-slate-400 mt-3">
-                  {shifts.filter(s => s.backendData?.is_open).length} ca còn trống trong tháng
-                </p>
-              </>
-            )}
-          </div>
-        </div>
       </div>
     </motion.div>
   );
@@ -729,8 +703,8 @@ function ShiftDetailModal({ shift, onClose, onOpenQR }: {
                   { label: 'Chưa check-in', value: assignments.filter((a: any) => a.status === 'confirmed').length - checkedInCount, color: 'text-slate-500', bg: 'bg-slate-50' },
                 ].map(s => (
                   <div key={s.label} className={cn('rounded-2xl p-3 text-center', s.bg)}>
-                    <p className={cn('text-xl font-black', s.color)}>{Math.max(0, s.value)}</p>
-                    <p className="text-[10px] font-bold text-slate-500 mt-0.5 leading-tight">{s.label}</p>
+                    <p className={cn('text-2xl font-black', s.color)}>{Math.max(0, s.value)}</p>
+                    <p className="text-xs font-bold text-slate-500 mt-0.5 leading-tight">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -742,7 +716,7 @@ function ShiftDetailModal({ shift, onClose, onOpenQR }: {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Chi tiết chấm công</p>
+                  <p className="text-sm font-black text-slate-400 uppercase tracking-wider">Chi tiết chấm công</p>
                   {records.map((r: any) => (
                     <div key={r.id} className="p-4 rounded-2xl border border-slate-100 bg-white space-y-3">
                       {/* Employee row */}
@@ -753,23 +727,23 @@ function ShiftDetailModal({ shift, onClose, onOpenQR }: {
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-slate-900 truncate">{r.user_name ?? `NV #${r.user}`}</p>
-                          {r.user_phone && <p className="text-xs text-slate-400">{r.user_phone}</p>}
+                          <p className="text-base font-bold text-slate-900 truncate">{r.user_name ?? `NV #${r.user}`}</p>
+                          {r.user_phone && <p className="text-sm text-slate-400">{r.user_phone}</p>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {r.is_late ? (
-                            <span className="text-[10px] font-black bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
+                            <span className="text-xs font-black bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
                               Trễ {r.late_minutes}p
                             </span>
                           ) : (
-                            <span className="text-[10px] font-black bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
+                            <span className="text-xs font-black bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
                               Đúng giờ
                             </span>
                           )}
                           {r.geo_valid ? (
-                            <span className="text-[10px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">GPS ✓</span>
+                            <span className="text-xs font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">GPS ✓</span>
                           ) : (
-                            <span className="text-[10px] font-black bg-red-100 text-red-600 px-2 py-0.5 rounded-full">GPS ✗</span>
+                            <span className="text-xs font-black bg-red-100 text-red-600 px-2 py-0.5 rounded-full">GPS ✗</span>
                           )}
                         </div>
                       </div>
@@ -777,18 +751,18 @@ function ShiftDetailModal({ shift, onClose, onOpenQR }: {
                       {/* Time grid */}
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="bg-slate-50 rounded-xl p-2">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Check-in</p>
-                          <p className="text-sm font-black text-slate-800">{fmtTime(r.checkin_at)}</p>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Check-in</p>
+                          <p className="text-base font-black text-slate-800">{fmtTime(r.checkin_at)}</p>
                         </div>
                         <div className="bg-slate-50 rounded-xl p-2">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Check-out</p>
-                          <p className={cn('text-sm font-black', r.checkout_at ? 'text-slate-800' : 'text-slate-300')}>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Check-out</p>
+                          <p className={cn('text-base font-black', r.checkout_at ? 'text-slate-800' : 'text-slate-300')}>
                             {r.checkout_at ? fmtTime(r.checkout_at) : '—'}
                           </p>
                         </div>
                         <div className="bg-slate-50 rounded-xl p-2">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Giờ làm</p>
-                          <p className={cn('text-sm font-black', r.worked_minutes ? 'text-[#005ac2]' : 'text-slate-300')}>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">Giờ làm</p>
+                          <p className={cn('text-base font-black', r.worked_minutes ? 'text-[#005ac2]' : 'text-slate-300')}>
                             {fmtMinutes(r.worked_minutes)}
                           </p>
                         </div>
@@ -796,7 +770,7 @@ function ShiftDetailModal({ shift, onClose, onOpenQR }: {
 
                       {/* Distance */}
                       {r.checkin_distance_meters != null && (
-                        <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                        <p className="text-sm text-slate-400 font-medium flex items-center gap-1">
                           <ArrowRight className="h-3 w-3 shrink-0" />
                           Khoảng cách check-in: <span className="font-black text-slate-600">{r.checkin_distance_meters}m</span>
                         </p>
@@ -1012,6 +986,224 @@ function TemplateManagerModal({ onClose }: { onClose: () => void }) {
             ))
           )}
         </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── BulkShiftModal ────────────────────────────────────────────────────────────
+const DAY_NAMES = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+function BulkShiftModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
+  const [loadingTpl, setLoadingTpl] = useState(true);
+  const [selectedTpl, setSelectedTpl] = useState<ShiftTemplate | null>(null);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState('');
+  const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4]);
+  const [isOpen, setIsOpen] = useState(true);
+  const [salaryMultiplier, setSalaryMultiplier] = useState('1.00');
+  const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<{ created: string[]; skipped: string[]; message: string } | null>(null);
+
+  useEffect(() => {
+    api.get('/shifts/templates/').then(r => setTemplates(r.data)).catch(() => {}).finally(() => setLoadingTpl(false));
+  }, []);
+
+  const previewDates = (() => {
+    if (!fromDate || !toDate || !selectedTpl) return [];
+    const dates: string[] = [];
+    const cur = new Date(fromDate);
+    const end = new Date(toDate);
+    while (cur <= end) {
+      const dow = (cur.getDay() + 6) % 7;
+      if (selectedDays.includes(dow)) dates.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return dates;
+  })();
+
+  const toggleDay = (d: number) =>
+    setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+
+  const handleSubmit = async () => {
+    if (!selectedTpl || previewDates.length === 0) return;
+    setSubmitting(true);
+    try {
+      const res = await api.post('/shifts/bulk-from-template/', {
+        template_id: selectedTpl.id,
+        dates: previewDates,
+        is_open: isOpen,
+        salary_multiplier: salaryMultiplier,
+        note,
+      });
+      setResult(res.data);
+      onCreated();
+    } catch {
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputCls = 'w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#005ac2]/20 focus:border-[#005ac2]';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-[#d8e2ff] flex items-center justify-center">
+              <BarChart3 className="h-5 w-5 text-[#005ac2]" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-slate-900">Tạo ca hàng loạt</h2>
+              <p className="text-xs text-slate-400 font-medium">Từ template theo khoảng ngày</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-400">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {result ? (
+          <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-center gap-4">
+            <div className="h-14 w-14 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-7 w-7 text-green-600" />
+            </div>
+            <p className="text-base font-black text-slate-900">{result.message}</p>
+            {result.skipped.length > 0 && (
+              <p className="text-sm text-slate-400">Bỏ qua (đã tồn tại): {result.skipped.join(', ')}</p>
+            )}
+            <button onClick={onClose} className="mt-2 px-8 py-2.5 bg-[#005ac2] text-white font-bold rounded-xl hover:bg-[#004fab] transition-colors">
+              Đóng
+            </button>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            {/* 1. Template */}
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">1. Chọn template</p>
+              {loadingTpl ? (
+                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-[#005ac2]" /></div>
+              ) : (
+                <div className="space-y-2">
+                  {templates.filter(t => t.is_active).map(tpl => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => { setSelectedTpl(tpl); setNote(tpl.name); }}
+                      className={cn(
+                        'w-full text-left px-4 py-3 rounded-xl border-2 transition-all',
+                        selectedTpl?.id === tpl.id ? 'border-[#005ac2] bg-[#d8e2ff]/30' : 'border-slate-100 hover:border-slate-200'
+                      )}
+                    >
+                      <p className="text-sm font-black text-slate-900">{tpl.name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        <Clock className="inline h-3 w-3 mr-1" />
+                        {tpl.start_time.slice(0, 5)} – {tpl.end_time.slice(0, 5)} · Tối đa {tpl.max_workers} NV
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 2. Khoảng ngày */}
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">2. Khoảng ngày</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Từ ngày</label>
+                  <input type="date" value={fromDate} min={today} onChange={e => setFromDate(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Đến ngày</label>
+                  <input type="date" value={toDate} min={fromDate} onChange={e => setToDate(e.target.value)} className={inputCls} />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Ngày trong tuần */}
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">3. Ngày trong tuần</p>
+              <div className="flex gap-2">
+                {DAY_NAMES.map((d, i) => (
+                  <button
+                    key={i}
+                    onClick={() => toggleDay(i)}
+                    className={cn(
+                      'flex-1 py-2 rounded-xl text-xs font-black transition-all',
+                      selectedDays.includes(i) ? 'bg-[#005ac2] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    )}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Tuỳ chọn */}
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">4. Tuỳ chọn</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Hệ số lương</label>
+                  <input type="number" min="1" step="0.1" value={salaryMultiplier} onChange={e => setSalaryMultiplier(e.target.value)} className={inputCls} />
+                </div>
+                <div className="flex items-end pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={isOpen} onChange={e => setIsOpen(e.target.checked)} className="w-4 h-4 accent-[#005ac2]" />
+                    <span className="text-sm font-bold text-slate-700">Mở đăng ký</span>
+                  </label>
+                </div>
+              </div>
+              <div className="mt-3">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Ghi chú</label>
+                <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="Tên ca..." className={inputCls} />
+              </div>
+            </div>
+
+            {/* Preview */}
+            {previewDates.length > 0 && (
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                  Xem trước · {previewDates.length} ca sẽ được tạo
+                </p>
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                  {previewDates.map(d => (
+                    <span key={d} className="px-2 py-0.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700">{d}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!result && (
+          <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
+              Hủy
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !selectedTpl || previewDates.length === 0}
+              className="flex-1 py-2.5 rounded-xl bg-[#005ac2] text-white font-bold text-sm hover:bg-[#004fab] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+              Tạo {previewDates.length > 0 ? `${previewDates.length} ca` : 'ca'}
+            </button>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );

@@ -19,6 +19,7 @@ interface ShiftContextType {
   addShift: (shift: any) => Promise<void>;
   removeShift: (id: string | number) => Promise<void>;
   claimShift: (id: string | number) => Promise<void>;
+  unclaimShift: (id: string | number) => Promise<void>;
 }
 
 const ShiftContext = createContext<ShiftContextType | undefined>(undefined);
@@ -37,7 +38,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
         const timeStr = `${s.start_time?.substring(0, 5)} - ${s.end_time?.substring(0, 5)}`;
         return {
           id: s.id,
-          name: s.created_by_name || 'Hệ thống',
+          name: s.store_address || s.store_name || 'Hệ thống',
           time: timeStr,
           date: s.date,
           type: s.is_emergency ? 'error' : (s.is_open ? 'primary' : 'tertiary'),
@@ -103,8 +104,18 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const unclaimShift = async (id: string | number) => {
+    try {
+      await api.delete(`/shifts/${id}/assignments/me/`);
+      await fetchShifts();
+    } catch (error: any) {
+      console.error('Failed to unclaim shift:', error);
+      throw error;
+    }
+  };
+
   return (
-    <ShiftContext.Provider value={{ shifts, isLoading, fetchShifts, addShift, removeShift, claimShift }}>
+    <ShiftContext.Provider value={{ shifts, isLoading, fetchShifts, addShift, removeShift, claimShift, unclaimShift }}>
       {children}
     </ShiftContext.Provider>
   );

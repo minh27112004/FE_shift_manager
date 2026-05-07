@@ -336,11 +336,12 @@ function AttendanceSection() {
   };
   const isNextDisabled = year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth() + 1);
 
-  const totalShifts = records.length;
-  const totalMinutes = records.reduce((s, r) => s + (r.worked_minutes ?? 0), 0);
+  const completedRecords = records.filter(r => r.checkin_at && r.checkout_at);
+  const totalShifts = completedRecords.length;
+  const totalMinutes = completedRecords.reduce((s, r) => s + (r.worked_minutes ?? 0), 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
-  const lateCount = records.filter(r => r.is_late).length;
-  const totalLateMinutes = records.reduce((s, r) => s + (r.late_minutes ?? 0), 0);
+  const lateCount = completedRecords.filter(r => r.is_late).length;
+  const totalLateMinutes = completedRecords.reduce((s, r) => s + (r.late_minutes ?? 0), 0);
 
   const fmt = (iso: string | null) => {
     if (!iso) return '—';
@@ -348,7 +349,7 @@ function AttendanceSection() {
   };
 
   const summary = [
-    { label: 'Số ca làm', value: `${totalShifts} ca`, icon: Calendar, color: 'bg-blue-50 text-blue-600' },
+    { label: 'Ca hoàn thành', value: `${totalShifts} ca`, icon: Calendar, color: 'bg-blue-50 text-blue-600' },
     { label: 'Tổng giờ làm', value: `${totalHours}h`, icon: Clock, color: 'bg-green-50 text-green-600' },
     { label: 'Số ca đi muộn', value: `${lateCount} ca`, icon: AlertTriangle, color: lateCount > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400' },
     { label: 'Tổng phút muộn', value: `${totalLateMinutes} phút`, icon: Clock, color: totalLateMinutes > 0 ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-400' },
@@ -404,41 +405,51 @@ function AttendanceSection() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-base">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Ngày</th>
-                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Ca làm</th>
-                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Check-in</th>
-                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Check-out</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Giờ làm</th>
-                  <th className="text-center px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Trạng thái</th>
+                  <th className="text-left px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Ngày</th>
+                  <th className="text-left px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Ca làm</th>
+                  <th className="text-left px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Check-in</th>
+                  <th className="text-left px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Check-out</th>
+                  <th className="text-right px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Giờ làm</th>
+                  <th className="text-center px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Trạng thái</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {records.map(r => (
                   <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-5 py-3.5 font-bold text-slate-700">
+                    <td className="px-5 py-4 font-bold text-slate-700">
                       {new Date(r.shift_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-600">
+                    <td className="px-5 py-4 text-slate-600">
                       {r.shift_start?.slice(0, 5)} – {r.shift_end?.slice(0, 5)}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-700 font-medium">{fmt(r.checkin_at)}</td>
-                    <td className="px-5 py-3.5 text-slate-700 font-medium">{fmt(r.checkout_at)}</td>
-                    <td className="px-5 py-3.5 text-right font-bold text-slate-700">
+                    <td className="px-5 py-4 text-slate-700 font-medium">{fmt(r.checkin_at)}</td>
+                    <td className="px-5 py-4 text-slate-700 font-medium">{fmt(r.checkout_at)}</td>
+                    <td className="px-5 py-4 text-right font-bold text-slate-700">
                       {r.worked_minutes != null ? `${(r.worked_minutes / 60).toFixed(1)}h` : '—'}
                     </td>
-                    <td className="px-5 py-3.5 text-center">
-                      {r.is_late ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-black">
-                          <AlertTriangle className="h-3 w-3" />
+                    <td className="px-5 py-4 text-center">
+                      {!r.checkin_at ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-400 text-xs font-black">
+                          <Clock className="h-3.5 w-3.5" />
+                          Chưa check-in
+                        </span>
+                      ) : !r.checkout_at ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-500 text-xs font-black">
+                          <Clock className="h-3.5 w-3.5" />
+                          Chưa check-out
+                        </span>
+                      ) : r.is_late ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-black">
+                          <AlertTriangle className="h-3.5 w-3.5" />
                           Muộn {r.late_minutes}p
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Đúng giờ
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 text-green-600 text-xs font-black">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Hoàn thành
                         </span>
                       )}
                     </td>
