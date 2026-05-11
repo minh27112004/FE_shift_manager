@@ -48,13 +48,13 @@ export default function App() {
                           </ProtectedRoute>
                         } 
                       />
-                      <Route 
-                        path="/ai-assistant" 
+                      <Route
+                        path="/ai-assistant"
                         element={
-                          <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                          <ProtectedRoute allowedRoles={['employee']}>
                             <AIAssistant />
                           </ProtectedRoute>
-                        } 
+                        }
                       />
                       <Route
                         path="/employees"

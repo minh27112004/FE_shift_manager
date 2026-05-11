@@ -66,7 +66,6 @@ export default function Layout({ children }: LayoutProps) {
     { icon: Bell, label: 'Thông báo', path: '/notifications', badge: unreadCount },
     { icon: UserPlus, label: 'Phân ca & Đăng ký', path: '/registration' },
     { icon: CreditCard, label: 'Bảng lương', path: '/payroll' },
-    { icon: Bot, label: 'Trợ lý AI', path: '/ai-assistant' },
     { icon: Users, label: 'Quản lý nhân viên', path: '/employees' },
     { icon: Settings, label: 'Cài đặt', path: '/settings' },
   ];
@@ -77,9 +76,9 @@ export default function Layout({ children }: LayoutProps) {
     { icon: ClipboardList, label: 'Đăng ký ca', path: '/registration' },
     { icon: Bell, label: 'Thông báo', path: '/notifications', badge: unreadCount },
     { icon: QrCode, label: 'Chấm công QR', path: '/qr-scanner' },
+    { icon: Bot, label: 'Trợ lý AI', path: '/ai-assistant' },
     { icon: User, label: 'Hồ sơ', path: '/profile/me' },
     { icon: Settings, label: 'Cài đặt', path: '/settings' },
-    { icon: HelpCircle, label: 'Hỗ trợ', path: '/help' },
   ];
 
   const navItems = role === 'admin' || role === 'manager' ? adminNavItems : employeeNavItems;

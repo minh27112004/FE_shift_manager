@@ -127,6 +127,7 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
   const [completedShifts, setCompletedShifts] = useState<number>(0);
   const [totalRegistered, setTotalRegistered] = useState<number>(0);
   const [upcomingShifts, setUpcomingShifts] = useState<any[]>([]);
+  const [estimatedIncome, setEstimatedIncome] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -143,6 +144,10 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
       const ongoing = records.find((rec: any) => rec.checkin_at && !rec.checkout_at);
       setActiveAttendance(ongoing ?? null);
       setCompletedShifts(records.filter((rec: any) => rec.checkin_at && rec.checkout_at).length);
+    }).catch(() => {});
+
+    api.get('/payroll/my-estimate/').then(r => {
+      setEstimatedIncome(Number(r.data.gross_amount));
     }).catch(() => {});
 
     api.get(`/shifts/my-shifts/?from=${todayStr}`).then(r => {
@@ -207,6 +212,16 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
       color: 'bg-[#e2e2e9] text-[#3e3f45]',
       tag: 'Tháng này'
     },
+    {
+      label: 'Thu nhập ước tính',
+      value: estimatedIncome !== null
+        ? estimatedIncome.toLocaleString('vi-VN') + ' đ'
+        : '—',
+      trend: 'Dựa trên giờ đã chấm công',
+      icon: TrendingUp,
+      color: 'bg-green-100 text-green-700',
+      tag: 'Tháng này'
+    },
   ];
 
   return (
@@ -220,7 +235,7 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
         <p className="text-slate-500 font-medium mt-1">Chúc bạn một ngày làm việc hiệu quả.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
