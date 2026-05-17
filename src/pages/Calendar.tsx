@@ -399,7 +399,7 @@ export default function CalendarPage() {
 
 // ─── QR Modal ─────────────────────────────────────────────────────────────────
 
-const QR_TTL = 120;
+const QR_TTL = 30;
 
 function QRModal({ shift, onClose }: { shift: { id: number; label: string; time: string; date: string }; onClose: () => void }) {
   const [token, setToken] = useState('');
@@ -482,7 +482,7 @@ function QRModal({ shift, onClose }: { shift: { id: number; label: string; time:
               </div>
 
               <p className="text-[10px] text-slate-400 font-medium text-center">
-                QR có hiệu lực <span className="font-black text-slate-600">2 phút</span>. Nhân viên quét hoặc nhập token bên dưới.
+                QR có hiệu lực <span className="font-black text-slate-600">30 giây</span>. Nhân viên quét hoặc nhập token bên dưới.
               </p>
 
               <div className="w-full flex gap-2">
