@@ -76,6 +76,7 @@ export default function Layout({ children }: LayoutProps) {
     { icon: ClipboardList, label: 'Đăng ký ca', path: '/registration' },
     { icon: Bell, label: 'Thông báo', path: '/notifications', badge: unreadCount },
     { icon: QrCode, label: 'Chấm công QR', path: '/qr-scanner' },
+    { icon: CreditCard, label: 'Phiếu lương', path: '/my-payslips' },
     { icon: Bot, label: 'Trợ lý AI', path: '/ai-assistant' },
     { icon: User, label: 'Hồ sơ', path: '/profile/me' },
     { icon: Settings, label: 'Cài đặt', path: '/settings' },

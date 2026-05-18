@@ -10,6 +10,7 @@ import CalendarPage from './pages/Calendar';
 import Notifications from './pages/Notifications';
 import Registration from './pages/Registration';
 import Payroll from './pages/Payroll';
+import MyPayslips from './pages/MyPayslips';
 import AIAssistant from './pages/AIAssistant';
 import EmployeeProfile from './pages/EmployeeProfile';
 import EmployeeManagement from './pages/EmployeeManagement';
@@ -38,6 +39,7 @@ export default function App() {
                       <Route path="/calendar" element={<CalendarPage />} />
                       <Route path="/notifications" element={<Notifications />} />
                       <Route path="/registration" element={<Registration />} />
+                      <Route path="/my-payslips" element={<MyPayslips />} />
                       
                       {/* Admin/Manager only routes */}
                       <Route 
