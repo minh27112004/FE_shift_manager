@@ -10,7 +10,7 @@ import {
   MoreVertical,
   Search,
   Trash2,
-  UserPlus
+  UserPlus,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";

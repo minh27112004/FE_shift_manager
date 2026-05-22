@@ -74,14 +74,34 @@ api.interceptors.response.use(
     if (error.response) {
       const data = error.response.data;
       const status = error.response.status;
-      const msg =
+      
+      let msg =
         data?.detail ||
-        data?.non_field_errors?.[0] ||
-        (typeof data === 'string' ? data : null) ||
-        (status === 403 ? 'Bạn không có quyền thực hiện thao tác này.' : null) ||
-        (status === 404 ? 'Không tìm thấy tài nguyên.' : null) ||
-        (status >= 500 ? 'Lỗi máy chủ. Vui lòng thử lại sau.' : null) ||
-        'Đã có lỗi xảy ra.';
+        data?.error ||
+        data?.message ||
+        data?.non_field_errors?.[0];
+
+      if (!msg && data && typeof data === 'object') {
+        const firstKey = Object.keys(data)[0];
+        if (firstKey) {
+          const firstVal = data[firstKey];
+          if (Array.isArray(firstVal) && typeof firstVal[0] === 'string') {
+            msg = firstVal[0];
+          } else if (typeof firstVal === 'string') {
+            msg = firstVal;
+          }
+        }
+      }
+
+      if (!msg) {
+        msg =
+          (typeof data === 'string' ? data : null) ||
+          (status === 403 ? 'Bạn không có quyền thực hiện thao tác này.' : null) ||
+          (status === 404 ? 'Không tìm thấy tài nguyên.' : null) ||
+          (status >= 500 ? 'Lỗi máy chủ. Vui lòng thử lại sau.' : null) ||
+          'Đã có lỗi xảy ra.';
+      }
+
       toast.error(msg);
     }
 

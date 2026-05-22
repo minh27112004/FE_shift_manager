@@ -33,7 +33,12 @@ export default function ToastContainer() {
 
   useEffect(() => {
     const unsubToast = toast.subscribe(item => {
-      setItems(prev => [...prev, item]);
+      setItems(prev => {
+        if (prev.some(t => t.message === item.message && t.type === item.type)) {
+          return prev;
+        }
+        return [...prev, item];
+      });
       setTimeout(() => setItems(prev => prev.filter(t => t.id !== item.id)), DURATION);
     });
     const unsubConfirm = toast.subscribeConfirm(item => {

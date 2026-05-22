@@ -66,8 +66,8 @@ export default function MyPayslips() {
       if (res.data.length > 0) {
         setSelectedPayslip(res.data[0]);
       }
-    } catch {
-      toast.error('Không tải được danh sách phiếu lương.');
+    } catch (err: any) {
+      console.error(err);
     } finally {
       setLoading(false);
     }

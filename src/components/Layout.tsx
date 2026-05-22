@@ -1,30 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import ToastContainer from './ToastContainer';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Calendar,
   Bell,
-  UserPlus,
-  CreditCard,
   Bot,
-  Users,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Search,
-  MessageSquare,
-  Settings as SettingsIcon,
-  User,
-  Menu,
-  X,
-  QrCode,
+  Calendar,
   ClipboardList,
+  CreditCard,
+  HelpCircle,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  QrCode,
+  Search,
+  Settings,
+  Settings as SettingsIcon,
   TableProperties,
-} from 'lucide-react';
-import { cn } from '../lib/utils';
-import { useAuth } from '../context/AuthContext';
-import api from '../lib/axios';
+  User,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import api from "../lib/axios";
+import { cn } from "../lib/utils";
+import ToastContainer from "./ToastContainer";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,14 +34,14 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const role = user?.role || 'employee';
+  const role = user?.role || "employee";
   const [unreadCount, setUnreadCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
-        const response = await api.get('/notifications/unread-count/');
+        const response = await api.get("/notifications/unread-count/");
         setUnreadCount(response.data.unread_count);
       } catch {
         // silently fail
@@ -60,34 +60,49 @@ export default function Layout({ children }: LayoutProps) {
   }, [location.pathname]);
 
   const adminNavItems = [
-    { icon: LayoutDashboard, label: 'Bảng điều khiển', path: '/' },
-    { icon: Calendar, label: 'Lịch làm việc', path: '/calendar' },
-    { icon: TableProperties, label: 'Quản lý ca làm', path: '/shift-management' },
-    { icon: Bell, label: 'Thông báo', path: '/notifications', badge: unreadCount },
-    { icon: UserPlus, label: 'Phân ca & Đăng ký', path: '/registration' },
-    { icon: CreditCard, label: 'Bảng lương', path: '/payroll' },
-    { icon: Users, label: 'Quản lý nhân viên', path: '/employees' },
-    { icon: Settings, label: 'Cài đặt', path: '/settings' },
+    { icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" },
+    { icon: Calendar, label: "Lịch làm việc", path: "/calendar" },
+    {
+      icon: TableProperties,
+      label: "Quản lý ca làm",
+      path: "/shift-management",
+    },
+    {
+      icon: Bell,
+      label: "Thông báo",
+      path: "/notifications",
+      badge: unreadCount,
+    },
+    { icon: UserPlus, label: "Phân ca & Đăng ký", path: "/registration" },
+    { icon: CreditCard, label: "Bảng lương", path: "/payroll" },
+    { icon: Users, label: "Quản lý nhân viên", path: "/employees" },
+    { icon: Settings, label: "Cài đặt", path: "/settings" },
   ];
 
   const employeeNavItems = [
-    { icon: LayoutDashboard, label: 'Trang cá nhân', path: '/' },
-    { icon: Calendar, label: 'Lịch ca của tôi', path: '/calendar' },
-    { icon: ClipboardList, label: 'Đăng ký ca', path: '/registration' },
-    { icon: Bell, label: 'Thông báo', path: '/notifications', badge: unreadCount },
-    { icon: QrCode, label: 'Chấm công QR', path: '/qr-scanner' },
-    { icon: CreditCard, label: 'Phiếu lương', path: '/my-payslips' },
-    { icon: Bot, label: 'Trợ lý AI', path: '/ai-assistant' },
-    { icon: User, label: 'Hồ sơ', path: '/profile/me' },
-    { icon: Settings, label: 'Cài đặt', path: '/settings' },
+    { icon: LayoutDashboard, label: "Trang cá nhân", path: "/" },
+    { icon: Calendar, label: "Lịch ca của tôi", path: "/calendar" },
+    { icon: ClipboardList, label: "Đăng ký ca", path: "/registration" },
+    {
+      icon: Bell,
+      label: "Thông báo",
+      path: "/notifications",
+      badge: unreadCount,
+    },
+    { icon: QrCode, label: "Chấm công QR", path: "/qr-scanner" },
+    { icon: CreditCard, label: "Phiếu lương", path: "/my-payslips" },
+    { icon: Bot, label: "Trợ lý AI", path: "/ai-assistant" },
+    { icon: User, label: "Hồ sơ", path: "/profile/me" },
+    { icon: Settings, label: "Cài đặt", path: "/settings" },
   ];
 
-  const navItems = role === 'admin' || role === 'manager' ? adminNavItems : employeeNavItems;
+  const navItems =
+    role === "admin" || role === "manager" ? adminNavItems : employeeNavItems;
 
   // Bottom nav items (mobile — max 5 items)
   const bottomNavItems = navItems.slice(0, 5);
 
-  if (location.pathname === '/login' || location.pathname === '/qr-scanner') {
+  if (location.pathname === "/login" || location.pathname === "/qr-scanner") {
     return <>{children}</>;
   }
 
@@ -100,8 +115,12 @@ export default function Layout({ children }: LayoutProps) {
             <span className="text-white font-bold text-sm">S</span>
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tighter text-slate-900">ShiftMate</h1>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Quản lý ca làm</p>
+            <h1 className="text-lg font-black tracking-tighter text-slate-900">
+              ShiftMate
+            </h1>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+              Quản lý ca làm
+            </p>
           </div>
         </div>
         {/* Close button — mobile only */}
@@ -122,14 +141,16 @@ export default function Layout({ children }: LayoutProps) {
               key={item.path}
               to={item.path}
               className={cn(
-                'flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium',
+                "flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium",
                 isActive
-                  ? 'bg-white text-[#005ac2] shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-200/50'
+                  ? "bg-white text-[#005ac2] shadow-sm"
+                  : "text-slate-600 hover:bg-slate-200/50",
               )}
             >
               <div className="flex items-center gap-3">
-                <item.icon className={cn('h-5 w-5', isActive && 'text-[#005ac2]')} />
+                <item.icon
+                  className={cn("h-5 w-5", isActive && "text-[#005ac2]")}
+                />
                 <span>{item.label}</span>
               </div>
               {!!item.badge && item.badge > 0 && (
@@ -149,7 +170,7 @@ export default function Layout({ children }: LayoutProps) {
             <User className="h-4 w-4" />
           </div>
           <div className="text-sm font-medium text-slate-700 truncate">
-            {user ? user.full_name || user.email || user.phone : 'Đang tải...'}
+            {user ? user.full_name || user.email || user.phone : "Đang tải..."}
           </div>
         </div>
         <Link
@@ -160,7 +181,10 @@ export default function Layout({ children }: LayoutProps) {
           <span>Trợ giúp</span>
         </Link>
         <button
-          onClick={() => { logout(); navigate('/login'); }}
+          onClick={() => {
+            logout();
+            navigate("/login");
+          }}
           className="flex items-center w-full gap-3 px-3 py-2 text-slate-600 hover:bg-slate-200/50 rounded-lg text-sm font-medium"
         >
           <LogOut className="h-5 w-5" />
@@ -190,8 +214,8 @@ export default function Layout({ children }: LayoutProps) {
       {/* Drawer */}
       <aside
         className={cn(
-          'lg:hidden fixed left-0 top-0 z-50 h-screen w-72 bg-slate-50 p-4 flex flex-col gap-2 shadow-2xl transition-transform duration-300',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          "lg:hidden fixed left-0 top-0 z-50 h-screen w-72 bg-slate-50 p-4 flex flex-col gap-2 shadow-2xl transition-transform duration-300",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <SidebarContent />
@@ -199,7 +223,6 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* ── Main ─────────────────────────────────────────── */}
       <main className="flex-1 lg:ml-64 min-w-0">
-
         {/* Header */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-white/90 px-4 lg:px-8 backdrop-blur-xl shadow-sm">
           {/* Hamburger — mobile */}
@@ -222,7 +245,10 @@ export default function Layout({ children }: LayoutProps) {
 
           {/* Right actions */}
           <div className="flex items-center gap-1 ml-auto">
-            <Link to="/notifications" className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors">
+            <Link
+              to="/notifications"
+              className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors"
+            >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#9f403d]" />
@@ -231,19 +257,25 @@ export default function Layout({ children }: LayoutProps) {
             <button className="hidden sm:flex rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors">
               <MessageSquare className="h-5 w-5" />
             </button>
-            <Link to="/settings" className="hidden sm:flex rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors">
+            <Link
+              to="/settings"
+              className="hidden sm:flex rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors"
+            >
               <SettingsIcon className="h-5 w-5" />
             </Link>
-            <Link to="/profile/me" className="ml-1 h-8 w-8 overflow-hidden rounded-full bg-[#005ac2] text-white flex items-center justify-center font-bold text-xs ring-2 ring-white">
-              {user?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+            <Link
+              to="/profile/me"
+              className="ml-1 h-8 w-8 overflow-hidden rounded-full bg-[#005ac2] text-white flex items-center justify-center font-bold text-xs ring-2 ring-white"
+            >
+              {user?.full_name?.charAt(0)?.toUpperCase() ||
+                user?.email?.charAt(0)?.toUpperCase() ||
+                "U"}
             </Link>
           </div>
         </header>
 
         {/* Page content — extra bottom padding on mobile for bottom nav */}
-        <div className="pb-20 lg:pb-0">
-          {children}
-        </div>
+        <div className="pb-20 lg:pb-0">{children}</div>
       </main>
 
       {/* ── Mobile Bottom Navigation ──────────────────────── */}
@@ -255,15 +287,15 @@ export default function Layout({ children }: LayoutProps) {
               key={item.path}
               to={item.path}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors relative',
-                isActive ? 'text-[#005ac2]' : 'text-slate-400'
+                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors relative",
+                isActive ? "text-[#005ac2]" : "text-slate-400",
               )}
             >
               <div className="relative">
                 <item.icon className="h-5 w-5" />
                 {!!item.badge && item.badge > 0 && (
                   <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-[#9f403d] text-[8px] font-bold text-white flex items-center justify-center">
-                    {item.badge > 9 ? '9+' : item.badge}
+                    {item.badge > 9 ? "9+" : item.badge}
                   </span>
                 )}
               </div>

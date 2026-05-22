@@ -20,6 +20,8 @@ interface ShiftContextType {
   removeShift: (id: string | number) => Promise<void>;
   claimShift: (id: string | number) => Promise<void>;
   unclaimShift: (id: string | number) => Promise<void>;
+  assignEmployee: (shiftId: string | number, userId: number) => Promise<void>;
+  unassignEmployee: (shiftId: string | number, userId: number) => Promise<void>;
 }
 
 const ShiftContext = createContext<ShiftContextType | undefined>(undefined);
@@ -114,8 +116,31 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const assignEmployee = async (shiftId: string | number, userId: number) => {
+    try {
+      await api.post(`/shifts/${shiftId}/assignments/`, { user_id: userId });
+      await fetchShifts();
+    } catch (error: any) {
+      console.error('Failed to assign employee:', error);
+      throw error;
+    }
+  };
+
+  const unassignEmployee = async (shiftId: string | number, userId: number) => {
+    try {
+      await api.delete(`/shifts/${shiftId}/assignments/${userId}/`);
+      await fetchShifts();
+    } catch (error: any) {
+      console.error('Failed to unassign employee:', error);
+      throw error;
+    }
+  };
+
   return (
-    <ShiftContext.Provider value={{ shifts, isLoading, fetchShifts, addShift, removeShift, claimShift, unclaimShift }}>
+    <ShiftContext.Provider value={{
+      shifts, isLoading, fetchShifts, addShift, removeShift,
+      claimShift, unclaimShift, assignEmployee, unassignEmployee
+    }}>
       {children}
     </ShiftContext.Provider>
   );

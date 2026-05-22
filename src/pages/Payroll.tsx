@@ -126,8 +126,8 @@ export default function Payroll() {
       if (r.data.length > 0) {
         setCreateStoreId(r.data[0].id);
       }
-    } catch {
-      toast.error('Không tải được danh sách cửa hàng.');
+    } catch (err: any) {
+      console.error(err);
     }
   };
 
@@ -142,8 +142,8 @@ export default function Payroll() {
       };
       const res = await api.get('/payroll/periods/', { params: p });
       setPeriods(res.data);
-    } catch {
-      toast.error('Không tải được danh sách kỳ lương.');
+    } catch (err: any) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -166,8 +166,7 @@ export default function Payroll() {
       setShowCreateModal(false);
       fetchPeriods();
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Có lỗi xảy ra khi tạo kỳ lương';
-      toast.error(msg);
+      console.error(err);
     } finally {
       setActionLoading(false);
     }
@@ -184,7 +183,7 @@ export default function Payroll() {
         fetchPeriodDetail(periodId);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Lỗi khi chốt bảng lương');
+      console.error(err);
     } finally {
       setActionLoading(false);
     }
@@ -201,7 +200,7 @@ export default function Payroll() {
         fetchPeriodDetail(periodId);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Lỗi khi xác nhận thanh toán');
+      console.error(err);
     } finally {
       setActionLoading(false);
     }
@@ -218,7 +217,7 @@ export default function Payroll() {
         fetchPeriodDetail(periodId);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Lỗi khi tính lại công');
+      console.error(err);
     } finally {
       setActionLoading(false);
     }
@@ -233,7 +232,7 @@ export default function Payroll() {
       setSelectedPeriod(null);
       fetchPeriods();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Lỗi khi xóa kỳ lương');
+      console.error(err);
     } finally {
       setActionLoading(false);
     }
@@ -255,7 +254,7 @@ export default function Payroll() {
       window.URL.revokeObjectURL(url);
       toast.success('Đã tải xuống file CSV thành công');
     } catch (err: any) {
-      toast.error('Lỗi khi xuất file CSV');
+      console.error(err);
     } finally {
       setActionLoading(false);
     }
@@ -266,8 +265,8 @@ export default function Payroll() {
     try {
       const res = await api.get(`/payroll/periods/${periodId}/`);
       setSelectedPeriod(res.data);
-    } catch {
-      toast.error('Không tải được chi tiết kỳ lương');
+    } catch (err: any) {
+      console.error(err);
     } finally {
       setDetailLoading(false);
     }
@@ -295,7 +294,7 @@ export default function Payroll() {
       await fetchPeriodDetail(selectedPeriod.id);
       fetchPeriods();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Lỗi khi cập nhật chi tiết');
+      console.error(err);
     } finally {
       setActionLoading(false);
     }

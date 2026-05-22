@@ -20,8 +20,14 @@ type ConfirmListener = (item: ConfirmItem) => void;
 let listeners: Listener[] = [];
 let confirmListeners: ConfirmListener[] = [];
 let _nextId = 1;
+let lastToast: { message: string; type: ToastType; time: number } | null = null;
 
 function emit(message: string, type: ToastType) {
+  const now = Date.now();
+  if (lastToast && lastToast.message === message && lastToast.type === type && now - lastToast.time < 1000) {
+    return;
+  }
+  lastToast = { message, type, time: now };
   const item: ToastItem = { id: _nextId++, message, type };
   listeners.forEach(l => l(item));
 }
@@ -38,11 +44,11 @@ export const toast = {
     });
   },
   subscribe(listener: Listener): () => void {
-    listeners.push(listener);
+    listeners = [listener];
     return () => { listeners = listeners.filter(l => l !== listener); };
   },
   subscribeConfirm(listener: ConfirmListener): () => void {
-    confirmListeners.push(listener);
+    confirmListeners = [listener];
     return () => { confirmListeners = confirmListeners.filter(l => l !== listener); };
   },
 };

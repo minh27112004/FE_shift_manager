@@ -8,7 +8,10 @@ import {
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
 import { toast } from '../lib/toast';
+import { useAuth } from '../context/AuthContext';
 import { ShiftFormModal, SHIFT_FORM_DEFAULT, type ShiftFormValues } from '../components/ShiftFormModal';
+import { ShiftDetailModal } from '../components/ShiftDetailModal';
+import { QRModal } from '../components/QRModal';
 
 interface Shift {
   id: number;
@@ -52,10 +55,26 @@ export default function ShiftManagement() {
   const [filterFrom, setFilterFrom] = useState(range.from);
   const [filterTo, setFilterTo] = useState(range.to);
   const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'closed' | 'emergency'>('all');
+  const { user } = useAuth();
+  const role = user?.role || 'employee';
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
 
   const [showForm, setShowForm] = useState(false);
+  const [detailShift, setDetailShift] = useState<{ id: number; type: string; label: string; time: string; date: string; backendData: any } | null>(null);
+  const [qrShift, setQrShift] = useState<{ id: number; label: string; time: string; date: string } | null>(null);
+
+  const openDetail = (s: Shift) => {
+    setDetailShift({
+      id: s.id,
+      type: s.is_emergency ? 'emergency' : 'open',
+      label: s.store_name || `Ca làm việc #${s.id}`,
+      time: `${s.start_time.slice(0, 5)} - ${s.end_time.slice(0, 5)}`,
+      date: s.date,
+      backendData: s,
+    });
+  };
+
   const [editTarget, setEditTarget] = useState<Shift | null>(null);
   const [form, setForm] = useState<ShiftFormValues>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -70,8 +89,8 @@ export default function ShiftManagement() {
       const res = await api.get('/shifts/', { params });
       setShifts(res.data);
       setPage(1);
-    } catch {
-      toast.error('Không tải được danh sách ca làm.');
+    } catch (err: any) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -113,7 +132,7 @@ export default function ShiftManagement() {
       await api.delete(`/shifts/${s.id}/`);
       setShifts(prev => prev.filter(x => x.id !== s.id));
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Xóa thất bại.');
+      console.error(err);
     }
   };
 
@@ -334,12 +353,16 @@ export default function ShiftManagement() {
                       <td className="px-4 py-3 text-slate-600 max-w-[180px] truncate">
                         {s.note || <span className="text-slate-300 italic">—</span>}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td
+                        onClick={() => openDetail(s)}
+                        className="px-4 py-3 whitespace-nowrap cursor-pointer hover:bg-[#005ac2]/10 transition-colors rounded-xl"
+                        title="Nhấp để quản lý và phân công nhân sự"
+                      >
                         <span className={cn(
-                          'flex items-center gap-1 font-bold text-sm',
+                          'inline-flex items-center gap-1.5 font-bold text-sm px-2.5 py-1 rounded-lg border border-slate-200/60 bg-white shadow-2xs hover:border-[#005ac2]/30 hover:text-[#005ac2] transition-all',
                           cnt >= s.max_workers ? 'text-green-600' : 'text-slate-700'
                         )}>
-                          <Users className="h-3.5 w-3.5 text-slate-400" />
+                          <Users className={cn('h-3.5 w-3.5', cnt >= s.max_workers ? 'text-green-500' : 'text-slate-400')} />
                           {cnt}/{s.max_workers}
                         </span>
                       </td>
@@ -423,7 +446,7 @@ export default function ShiftManagement() {
         </div>
       )}
 
-      {/* Create / Edit Modal */}
+      {/* Modals */}
       <AnimatePresence>
         {showForm && (
           <ShiftFormModal
@@ -434,6 +457,29 @@ export default function ShiftManagement() {
             submitting={saving}
             error={formError}
             editMode={!!editTarget}
+          />
+        )}
+
+        {detailShift && (
+          <ShiftDetailModal
+            shift={detailShift}
+            userRole={role}
+            onClose={() => { setDetailShift(null); fetchShifts(); }}
+            onOpenQR={() => {
+              setQrShift({
+                id: detailShift.id,
+                label: detailShift.label,
+                time: detailShift.time,
+                date: detailShift.date,
+              });
+            }}
+          />
+        )}
+
+        {qrShift && (
+          <QRModal
+            shift={qrShift}
+            onClose={() => setQrShift(null)}
           />
         )}
       </AnimatePresence>
