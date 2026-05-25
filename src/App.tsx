@@ -18,6 +18,7 @@ import ShiftManagement from './pages/ShiftManagement';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import QRScanner from './pages/QRScanner';
+import Reports from './pages/Reports';
 
 export default function App() {
   return (
@@ -71,6 +72,14 @@ export default function App() {
                         element={
                           <ProtectedRoute allowedRoles={['admin', 'manager']}>
                             <ShiftManagement />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/reports"
+                        element={
+                          <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                            <Reports />
                           </ProtectedRoute>
                         }
                       />

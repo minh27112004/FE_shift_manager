@@ -9,6 +9,7 @@ export interface Shift {
   date: string;
   type: 'primary' | 'tertiary' | 'error';
   label: string;
+  isPast?: boolean;
   backendData?: any;
 }
 
@@ -38,6 +39,15 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
       const rawShifts = response.data;
       const formattedShifts: Shift[] = rawShifts.map((s: any) => {
         const timeStr = `${s.start_time?.substring(0, 5)} - ${s.end_time?.substring(0, 5)}`;
+        let isPast = false;
+        if (s.date && s.end_time && s.start_time) {
+          const endDt = new Date(`${s.date}T${s.end_time}`);
+          const startDt = new Date(`${s.date}T${s.start_time}`);
+          if (endDt < startDt) {
+            endDt.setDate(endDt.getDate() + 1);
+          }
+          isPast = new Date() > endDt;
+        }
         return {
           id: s.id,
           name: s.store_address || s.store_name || 'Hệ thống',
@@ -45,6 +55,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
           date: s.date,
           type: s.is_emergency ? 'error' : (s.is_open ? 'primary' : 'tertiary'),
           label: s.note || `Ca làm (${s.assignments?.length || 0}/${s.max_workers})`,
+          isPast,
           backendData: s
         };
       });

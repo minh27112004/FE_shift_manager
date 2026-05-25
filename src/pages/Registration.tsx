@@ -71,6 +71,11 @@ interface PendingClaim {
   userName: string;
   userPhone: string;
   submittedAt: string;
+  userMetrics?: {
+    late_count: number;
+    early_checkout_count: number;
+    absent_count: number;
+  };
 }
 
 function AdminRegistration() {
@@ -100,6 +105,7 @@ function AdminRegistration() {
               `ID ${a.user_id ?? a.user?.id}`,
             userPhone: a.user_phone || a.user?.phone || "—",
             submittedAt: a.assigned_at,
+            userMetrics: a.user_metrics,
           });
         }
       });
@@ -245,7 +251,7 @@ function AdminRegistration() {
               {tab.count > 0 && (
                 <span
                   className={cn(
-                    "h-5 min-w-5 px-1 rounded-full text-[10px] font-black text-white flex items-center justify-center",
+                    "h-5 min-w-5 px-1.5 rounded-full text-xs font-black text-white flex items-center justify-center",
                     tab.color,
                   )}
                 >
@@ -294,6 +300,7 @@ function AdminRegistration() {
                       name: claim.userName,
                       sub: `${claim.userPhone} · ${new Date(claim.submittedAt).toLocaleString("vi-VN")}`,
                     }}
+                    userMetrics={claim.userMetrics}
                     loading={actionId === claim.assignmentId}
                     onApprove={() => handleClaimAction(claim, true)}
                     onReject={() => handleClaimAction(claim, false)}
@@ -421,6 +428,11 @@ interface AdminCardProps {
   loading: boolean;
   onApprove: () => void;
   onReject: () => void;
+  userMetrics?: {
+    late_count: number;
+    early_checkout_count: number;
+    absent_count: number;
+  };
 }
 
 function AdminCard({
@@ -432,6 +444,7 @@ function AdminCard({
   loading,
   onApprove,
   onReject,
+  userMetrics,
 }: AdminCardProps) {
   return (
     <motion.div
@@ -444,13 +457,13 @@ function AdminCard({
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span
               className={cn(
-                "px-2 py-0.5 text-[10px] font-black rounded uppercase tracking-wider",
+                "px-2 py-0.5 text-xs font-black rounded uppercase tracking-wider",
                 badgeColor,
               )}
             >
               {badge}
             </span>
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded uppercase tracking-wider">
+            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-black rounded uppercase tracking-wider">
               Chờ duyệt
             </span>
           </div>
@@ -465,16 +478,55 @@ function AdminCard({
               </span>
             ))}
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-[#005ac2]/10 text-[#005ac2] flex items-center justify-center font-black text-xs shrink-0">
-              {person.name.charAt(0).toUpperCase()}
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#005ac2]/10 text-[#005ac2] flex items-center justify-center font-black text-xs shrink-0">
+                {person.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800">{person.name}</p>
+                <p className="text-sm text-slate-400 truncate max-w-xs">
+                  {person.sub}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800">{person.name}</p>
-              <p className="text-sm text-slate-400 truncate max-w-xs">
-                {person.sub}
-              </p>
-            </div>
+            {userMetrics && (
+              <div className="flex items-center gap-1.5 flex-wrap text-xs font-black uppercase tracking-wider mt-1.5">
+                <span className="text-slate-400 font-bold text-xs normal-case tracking-normal mr-1">
+                  Tháng trước:
+                </span>
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-md",
+                    userMetrics.late_count > 0
+                      ? "bg-red-50 text-red-600 border border-red-100"
+                      : "bg-slate-50 text-slate-400 border border-slate-100"
+                  )}
+                >
+                  Đi muộn: {userMetrics.late_count}
+                </span>
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-md",
+                    userMetrics.early_checkout_count > 0
+                      ? "bg-amber-50 text-amber-600 border border-amber-100"
+                      : "bg-slate-50 text-slate-400 border border-slate-100"
+                  )}
+                >
+                  Về sớm: {userMetrics.early_checkout_count}
+                </span>
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-md",
+                    userMetrics.absent_count > 0
+                      ? "bg-red-100 text-red-700 border border-red-200"
+                      : "bg-slate-50 text-slate-400 border border-slate-100"
+                  )}
+                >
+                  Vắng: {userMetrics.absent_count}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -788,7 +840,7 @@ function EmployeeRegistration() {
                 {tab.count > 0 && (
                   <span
                     className={cn(
-                      "flex h-4 min-w-4 px-1 items-center justify-center rounded-full text-[9px] font-black text-white shrink-0",
+                      "flex h-4 min-w-4 px-1 items-center justify-center rounded-full text-[10px] font-black text-white shrink-0",
                       tab.badgeColor,
                     )}
                   >
@@ -911,9 +963,9 @@ function EmployeeRegistration() {
                                 <span className="text-sm font-black text-green-700">
                                   {new Date(shift.date).getDate()}
                                 </span>
-                                <span className="text-[10px] font-bold text-green-500 uppercase">
-                                  T{new Date(shift.date).getMonth() + 1}
-                                </span>
+                                 <span className="text-xs font-bold text-green-500 uppercase">
+                                   T{new Date(shift.date).getMonth() + 1}
+                                 </span>
                               </div>
                               <div>
                                 <p className="text-sm font-black text-slate-900">
@@ -1165,17 +1217,17 @@ function ShiftCard({ shift, variant, claiming, onClaim }: ShiftCardProps) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             {variant === "emergency" && (
-              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-black rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-black rounded uppercase tracking-wider flex items-center gap-1">
                 <AlertTriangle className="h-3 w-3" /> Khẩn cấp
               </span>
             )}
             {variant === "wishlist" && (
-              <span className="px-2 py-0.5 bg-blue-50 text-[#005ac2] text-[10px] font-black rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-blue-50 text-[#005ac2] text-xs font-black rounded uppercase tracking-wider flex items-center gap-1">
                 <Bookmark className="h-3 w-3" /> Nguyện vọng
               </span>
             )}
             {multiplier > 1 && (
-              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-black rounded">
+              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-black rounded">
                 x{multiplier} lương
               </span>
             )}
@@ -1198,10 +1250,7 @@ function ShiftCard({ shift, variant, claiming, onClaim }: ShiftCardProps) {
         <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
           <Users className="h-4 w-4" />
           <span>
-            <span className="text-[#005ac2]">
-              {filled}/{max}
-            </span>{" "}
-            đã đăng ký
+            Cần tuyển: <span className="text-[#005ac2] font-black">{max}</span> người
           </span>
         </div>
         <button
@@ -1264,7 +1313,7 @@ function SwapCard({ request, responding, onAccept, onReject }: SwapCardProps) {
           <div className="flex items-center gap-2 mb-1.5">
             <span
               className={cn(
-                "px-2 py-0.5 text-[10px] font-black rounded uppercase tracking-wider flex items-center gap-1",
+                "px-2 py-0.5 text-xs font-black rounded uppercase tracking-wider flex items-center gap-1",
                 isTransfer
                   ? "bg-amber-100 text-amber-700"
                   : "bg-purple-100 text-purple-700",
@@ -1278,7 +1327,7 @@ function SwapCard({ request, responding, onAccept, onReject }: SwapCardProps) {
               {isTransfer ? "Ca nhượng" : "Đề nghị đổi ca"}
             </span>
             {hoursLeft <= 12 && (
-              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-black rounded">
+              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-black rounded">
                 còn {hoursLeft}h
               </span>
             )}

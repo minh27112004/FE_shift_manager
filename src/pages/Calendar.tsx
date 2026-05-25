@@ -168,7 +168,11 @@ export default function CalendarPage() {
                 (a: any) => String(a.user ?? a.user_id) === String(user?.id),
               ),
             )
-            .map((s) => ({ ...s, backendData: s.backendData ?? {} })),
+            .map((s) => ({
+              ...s,
+              isPast: s.isPast ?? false,
+              backendData: s.backendData ?? {},
+            })),
         );
       } finally {
         setMyShiftsLoading(false);

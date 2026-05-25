@@ -18,6 +18,7 @@ import {
   UserPlus,
   Users,
   X,
+  BarChart3,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -75,6 +76,7 @@ export default function Layout({ children }: LayoutProps) {
     },
     { icon: UserPlus, label: "Phân ca & Đăng ký", path: "/registration" },
     { icon: CreditCard, label: "Bảng lương", path: "/payroll" },
+    { icon: BarChart3, label: "Thống kê báo cáo", path: "/reports" },
     { icon: Users, label: "Quản lý nhân viên", path: "/employees" },
     { icon: Settings, label: "Cài đặt", path: "/settings" },
   ];
@@ -118,7 +120,7 @@ export default function Layout({ children }: LayoutProps) {
             <h1 className="text-lg font-black tracking-tighter text-slate-900">
               ShiftMate
             </h1>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
               Quản lý ca làm
             </p>
           </div>
@@ -294,12 +296,12 @@ export default function Layout({ children }: LayoutProps) {
               <div className="relative">
                 <item.icon className="h-5 w-5" />
                 {!!item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-[#9f403d] text-[8px] font-bold text-white flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-[#9f403d] text-[9px] font-bold text-white flex items-center justify-center">
                     {item.badge > 9 ? "9+" : item.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[9px] font-bold truncate max-w-[56px] text-center leading-tight">
+              <span className="text-[10px] font-bold truncate max-w-[64px] text-center leading-tight">
                 {item.label}
               </span>
               {isActive && (
