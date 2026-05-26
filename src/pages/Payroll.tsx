@@ -173,7 +173,8 @@ export default function Payroll() {
   };
 
   const handleConfirmPeriod = async (periodId: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn CHỐT bảng lương này? Sau khi chốt sẽ không thể chỉnh sửa và hệ thống sẽ gửi thông báo đến tất cả nhân viên.')) return;
+    const ok = await toast.confirm('Bạn có chắc chắn muốn CHỐT bảng lương này? Sau khi chốt sẽ không thể chỉnh sửa và hệ thống sẽ gửi thông báo đến tất cả nhân viên.');
+    if (!ok) return;
     setActionLoading(true);
     try {
       await api.post(`/payroll/periods/${periodId}/confirm/`);
@@ -190,7 +191,8 @@ export default function Payroll() {
   };
 
   const handlePayPeriod = async (periodId: number) => {
-    if (!window.confirm('Xác nhận ĐÃ THANH TOÁN toàn bộ bảng lương này? Hệ thống sẽ gửi thông báo nhận lương thành công tới nhân viên.')) return;
+    const ok = await toast.confirm('Xác nhận ĐÃ THANH TOÁN toàn bộ bảng lương này? Hệ thống sẽ gửi thông báo nhận lương thành công tới nhân viên.');
+    if (!ok) return;
     setActionLoading(true);
     try {
       await api.post(`/payroll/periods/${periodId}/pay/`);
@@ -207,7 +209,8 @@ export default function Payroll() {
   };
 
   const handleRecalculatePeriod = async (periodId: number) => {
-    if (!window.confirm('Bạn muốn tính toán lại công cho bảng lương này? Hệ thống sẽ cập nhật dữ liệu chấm công mới nhất và giữ nguyên các khoản thưởng/phạt thủ công.')) return;
+    const ok = await toast.confirm('Bạn muốn tính toán lại công cho bảng lương này? Hệ thống sẽ cập nhật dữ liệu chấm công mới nhất và giữ nguyên các khoản thưởng/phạt thủ công.');
+    if (!ok) return;
     setActionLoading(true);
     try {
       await api.post(`/payroll/periods/${periodId}/recalculate/`);
@@ -224,7 +227,8 @@ export default function Payroll() {
   };
 
   const handleDeletePeriod = async (periodId: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa kỳ lương nháp này?')) return;
+    const ok = await toast.confirm('Bạn có chắc chắn muốn xóa kỳ lương nháp này?');
+    if (!ok) return;
     setActionLoading(true);
     try {
       await api.delete(`/payroll/periods/${periodId}/`);

@@ -12,7 +12,8 @@ import {
   History,
   Timer,
   LogOut,
-  Bell
+  Bell,
+  Users
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useShifts } from '../context/ShiftContext';
@@ -34,15 +35,24 @@ export default function Dashboard() {
 function AdminDashboard({ shifts }: { shifts: any[] }) {
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
   const [pendingSwaps, setPendingSwaps] = useState<number | null>(null);
+  const [todayRecords, setTodayRecords] = useState<any[]>([]);
+
   useEffect(() => {
     api.get('/employees/').then(r => setEmployeeCount(r.data.length)).catch(() => {});
     api.get('/shifts/swap-requests/').then(r => {
       const pending = r.data.filter((s: any) => s.status === 'pending' || s.status === 'partner_accepted');
       setPendingSwaps(pending.length);
     }).catch(() => {});
+    api.get('/attendance/records/today/').then(r => setTodayRecords(r.data)).catch(() => {});
   }, []);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
   const todayShifts = shifts.filter(s => s.date === todayStr);
 
   const stats = [
@@ -117,6 +127,130 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
         ))}
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+        {/* Today's Shifts List (Left) */}
+        <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <h2 className="text-base font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+            <Clock className="h-5 w-5 text-[#5f5c78]" />
+            Ca làm hôm nay
+          </h2>
+          <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto pr-1">
+            {todayShifts.length === 0 ? (
+              <p className="text-sm text-slate-400 py-4 text-center">Không có ca làm nào hôm nay</p>
+            ) : (
+              todayShifts.map((shift: any) => {
+                const shiftTitle = shift.name || shift.label || "Ca làm việc";
+                const isEmergency = shift.backendData?.is_emergency;
+                const workers = shift.backendData?.assignments || [];
+                return (
+                  <div key={shift.id} className="py-4 first:pt-0 last:pb-0 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-base font-black text-slate-800 flex items-center gap-1.5">
+                          {shiftTitle}
+                          {isEmergency && (
+                            <span className="px-1.5 py-0.5 bg-red-50 text-red-600 text-xs font-black rounded uppercase">Khẩn cấp</span>
+                          )}
+                        </h3>
+                        <p className="text-sm text-slate-500 font-bold mt-0.5">{shift.time}</p>
+                      </div>
+                      <span className="text-sm font-medium text-slate-600 bg-slate-50 px-2 py-1 rounded-lg">
+                        {shift.backendData?.store_name || "Hệ thống"}
+                      </span>
+                    </div>
+                    {/* Assigned Workers list */}
+                    <div className="space-y-1">
+                      <p className="text-xs text-slate-500 uppercase font-black tracking-wider">Nhân viên được phân:</p>
+                      {workers.length === 0 ? (
+                        <p className="text-sm text-slate-400 italic">Chưa có người nhận ca</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {workers.map((a: any) => (
+                            <span key={a.id} className="text-sm font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md">
+                              {a.user_name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Today's Checkin / Checkout Records (Right) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <h2 className="text-base font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-[#005ac2]" />
+            Lịch sử điểm danh hôm nay
+          </h2>
+          <div className="max-h-[400px] overflow-y-auto pr-1">
+            {todayRecords.length === 0 ? (
+              <p className="text-sm text-slate-400 py-12 text-center">Chưa có nhân viên nào check-in hôm nay</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-500">
+                      <th className="pb-3 text-sm font-black uppercase tracking-wider">Nhân viên</th>
+                      <th className="pb-3 text-sm font-black uppercase tracking-wider">Ca làm</th>
+                      <th className="pb-3 text-sm font-black uppercase tracking-wider">Check-in</th>
+                      <th className="pb-3 text-sm font-black uppercase tracking-wider">Check-out</th>
+                      <th className="pb-3 text-center text-sm font-black uppercase tracking-wider">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {todayRecords.map((rec: any) => {
+                      const checkInTime = rec.checkin_at
+                        ? new Date(rec.checkin_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                        : "—";
+                      const checkOutTime = rec.checkout_at
+                        ? new Date(rec.checkout_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                        : "—";
+                      const isLate = rec.is_late;
+                      return (
+                        <tr key={rec.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-3 pr-2">
+                            <p className="text-base font-black text-slate-800">{rec.user_name}</p>
+                            <p className="text-xs font-bold text-slate-500">{rec.user_phone}</p>
+                          </td>
+                          <td className="py-3 pr-2">
+                            <p className="text-sm font-black text-slate-700">{rec.store_name}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{rec.shift_start?.slice(0, 5)} - {rec.shift_end?.slice(0, 5)}</p>
+                          </td>
+                          <td className="py-3 text-base font-bold text-slate-800">{checkInTime}</td>
+                          <td className="py-3 text-base font-bold text-slate-800">{checkOutTime}</td>
+                          <td className="py-3 text-center">
+                            <div className="flex flex-wrap justify-center gap-1">
+                              {isLate && (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-black uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-100">
+                                  Muộn {rec.late_minutes}p
+                                </span>
+                              )}
+                              {rec.checkout_at ? (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100">
+                                  Đã chốt ca
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-black uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">
+                                  Đang làm việc
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
     </motion.div>
   );
 }
@@ -137,7 +271,7 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
     const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
     const from = `${year}-${month}-01`;
     const to = `${year}-${month}-${lastDay}`;
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = `${year}-${month}-${String(now.getDate()).padStart(2, '0')}`;
 
     api.get(`/attendance/records/me/?from=${from}&to=${to}`).then(r => {
       const records: any[] = r.data;

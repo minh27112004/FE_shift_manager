@@ -51,7 +51,13 @@ export default function Layout({ children }: LayoutProps) {
     if (user) {
       fetchUnreadCount();
       const interval = setInterval(fetchUnreadCount, 60000);
-      return () => clearInterval(interval);
+      
+      window.addEventListener("unread-count-changed", fetchUnreadCount);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("unread-count-changed", fetchUnreadCount);
+      };
     }
   }, [user]);
 

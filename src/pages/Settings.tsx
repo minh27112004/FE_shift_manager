@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/axios";
 import { cn } from "../lib/utils";
+import { toast } from "../lib/toast";
 
 interface StoreData {
   id: number;
@@ -76,6 +77,7 @@ export default function Settings() {
           label: "Phương thức thanh toán",
           desc: "Quản lý tài khoản nhận lương",
           color: "bg-green-100 text-green-600",
+          action: () => toast.info("Vui lòng liên hệ Admin để thay đổi phương thức thanh toán."),
         },
       ],
     },
@@ -366,7 +368,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
                     inputCls,
                     "pr-10",
                     errors[key] &&
-                      "border-red-300 focus:ring-red-200 focus:border-red-400",
+                    "border-red-300 focus:ring-red-200 focus:border-red-400",
                   )}
                   placeholder={
                     key === "old_password" ? "••••••••" : "Tối thiểu 6 ký tự"
@@ -440,7 +442,7 @@ function StoreSettings() {
     api
       .get("/stores/")
       .then((r) => setStores(r.data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -557,9 +559,6 @@ function StoreSettings() {
                   </div>
                   <div>
                     <h3 className="font-black text-slate-900">{store.name}</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      ID #{store.id}
-                    </p>
                   </div>
                 </div>
                 {editingId !== store.id ? (

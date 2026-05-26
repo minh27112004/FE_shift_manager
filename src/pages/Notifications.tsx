@@ -43,6 +43,7 @@ export default function Notifications() {
     try {
       await api.post("/notifications/read-all/");
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      window.dispatchEvent(new Event("unread-count-changed"));
     } catch (error) {
       console.error("Failed to mark as read", error);
     }
@@ -54,6 +55,7 @@ export default function Notifications() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
       );
+      window.dispatchEvent(new Event("unread-count-changed"));
     } catch (error) {
       console.error("Failed to mark notification as read", error);
     }

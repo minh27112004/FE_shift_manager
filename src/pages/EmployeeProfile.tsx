@@ -28,7 +28,13 @@ export default function EmployeeProfile() {
   const [employee, setEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({ full_name: '', email: '', address: '' });
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    address: '',
+    telegram_chat_id: '',
+    emergency_contact: '',
+  });
 
   const fetchEmployee = async () => {
     setLoading(true);
@@ -40,6 +46,8 @@ export default function EmployeeProfile() {
           full_name: response.data.full_name || '',
           email: response.data.email || '',
           address: response.data.profile?.address || '',
+          telegram_chat_id: response.data.telegram_chat_id || '',
+          emergency_contact: response.data.profile?.emergency_contact || '',
         });
       } else {
         const response = await api.get(`/employees/${id}/`);
@@ -59,7 +67,15 @@ export default function EmployeeProfile() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.patch('/me/', { full_name: formData.full_name, email: formData.email, profile: { address: formData.address } });
+      await api.patch('/me/', {
+        full_name: formData.full_name,
+        email: formData.email,
+        telegram_chat_id: formData.telegram_chat_id,
+        profile: {
+          address: formData.address,
+          emergency_contact: formData.emergency_contact
+        }
+      });
       setIsEditing(false);
       await fetchEmployee();
       toast.success('Cập nhật hồ sơ thành công!');
@@ -133,7 +149,7 @@ export default function EmployeeProfile() {
             <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-6">Cập nhật thông tin</h2>
             <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 md:col-span-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Họ và tên</label>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Họ và tên</label>
                 <input
                   type="text"
                   value={formData.full_name}
@@ -141,8 +157,8 @@ export default function EmployeeProfile() {
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email</label>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -150,12 +166,31 @@ export default function EmployeeProfile() {
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Telegram Chat ID</label>
+                <input
+                  type="text"
+                  value={formData.telegram_chat_id}
+                  onChange={e => setFormData({...formData, telegram_chat_id: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
+                  placeholder="ID chat nhận thông báo..."
+                />
+              </div>
               <div className="space-y-2 md:col-span-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Địa chỉ</label>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Địa chỉ</label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={e => setFormData({...formData, address: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Liên hệ khẩn cấp</label>
+                <input
+                  type="text"
+                  value={formData.emergency_contact}
+                  onChange={e => setFormData({...formData, emergency_contact: e.target.value})}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
@@ -381,7 +416,7 @@ function AttendanceSection() {
             </div>
             <div>
               <p className="text-lg font-black text-slate-900">{s.value}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{s.label}</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{s.label}</p>
             </div>
           </div>
         ))}
