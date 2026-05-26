@@ -86,6 +86,19 @@ function AdminRegistration() {
   const [swapLoading, setSwapLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
 
+  const fmtShiftDateTime = (shiftData: any) => {
+    if (!shiftData) return "";
+    const dateObj = new Date(shiftData.date + "T00:00:00");
+    const formattedDate = dateObj.toLocaleDateString("vi-VN", {
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+    });
+    const start = (shiftData.start_time || "").slice(0, 5);
+    const end = (shiftData.end_time || "").slice(0, 5);
+    return `${formattedDate} · ${start}–${end}`;
+  };
+
   // Build pending claims from shifts context
   useEffect(() => {
     const claims: PendingClaim[] = [];
@@ -335,7 +348,9 @@ function AdminRegistration() {
                     meta={[
                       {
                         icon: <ArrowRight className="h-3.5 w-3.5" />,
-                        text: `Ca nhượng #${req.offered_shift}`,
+                        text: req.offered_shift_data
+                          ? `Ca nhượng: ${fmtShiftDateTime(req.offered_shift_data)}`
+                          : `Ca nhượng #${req.offered_shift}`,
                       },
                       {
                         icon: <Clock className="h-3.5 w-3.5" />,
@@ -380,7 +395,9 @@ function AdminRegistration() {
                     meta={[
                       {
                         icon: <RefreshCw className="h-3.5 w-3.5" />,
-                        text: `Ca đề xuất #${req.offered_shift} ↔ Ca mục tiêu #${req.target_shift}`,
+                        text: (req.offered_shift_data && req.target_shift_data)
+                          ? `Đổi: ${fmtShiftDateTime(req.offered_shift_data)} ↔ Nhận: ${fmtShiftDateTime(req.target_shift_data)}`
+                          : `Ca #${req.offered_shift} ↔ Ca #${req.target_shift}`,
                       },
                       {
                         icon: <Clock className="h-3.5 w-3.5" />,
@@ -812,7 +829,7 @@ function EmployeeRegistration() {
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-xs font-black rounded-xl shadow-lg shadow-purple-200 hover:bg-purple-700 active:scale-95 transition-all"
               >
                 <Plus className="h-4 w-4" />
-                Tạo yêu cầu đổi ca
+                Tạo yêu cầu đổi/nhượng ca
               </button>
             </div>
           </div>
@@ -1448,8 +1465,11 @@ interface CandidateShift {
 }
 
 function SwapCreateModal({ onClose }: { onClose: () => void }) {
+  const { user } = useAuth();
   const [step, setStep] = useState<SwapStep>("offer");
   const [searchMode, setSearchMode] = useState<SearchMode>("phone");
+  const [swapType, setSwapType] = useState<"exchange" | "transfer">("exchange");
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
 
   // Step 1 — offered shift
   const [myShifts, setMyShifts] = useState<any[]>([]);
@@ -1481,6 +1501,7 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
   const [targetEmployee, setTargetEmployee] = useState<{
     id: string;
     full_name: string;
+    phone?: string;
   } | null>(null);
 
   // Step 3
@@ -1506,10 +1527,21 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
       })
       .catch(() => {})
       .finally(() => setMyShiftsLoading(false));
+
+    api
+      .get("/employees/", { params: { exclude_swapping: "true" } })
+      .then((r) => {
+        setAllEmployees(r.data);
+      })
+      .catch(() => {});
   }, [today]);
 
   const handlePhoneSearch = async () => {
     if (!phone.trim()) return;
+    if (user && phone.trim() === user.phone) {
+      setPhoneError("Không thể tự trao đổi/nhượng ca với chính mình.");
+      return;
+    }
     setPhoneSearching(true);
     setPhoneError("");
     setFoundEmployee(null);
@@ -1520,12 +1552,18 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
       const res = await api.get("/employees/lookup/", {
         params: { phone: phone.trim() },
       });
+      if (user && String(res.data.id) === String(user.id)) {
+        setPhoneError("Không thể tự trao đổi/nhượng ca với chính mình.");
+        return;
+      }
       setFoundEmployee(res.data);
-      setEmployeeShiftsLoading(true);
-      const shiftsRes = await api.get("/shifts/swap-candidates/", {
-        params: { employee: res.data.id },
-      });
-      setEmployeeShifts(shiftsRes.data);
+      if (swapType === "exchange") {
+        setEmployeeShiftsLoading(true);
+        const shiftsRes = await api.get("/shifts/swap-candidates/", {
+          params: { employee: res.data.id },
+        });
+        setEmployeeShifts(shiftsRes.data);
+      }
     } catch (err: any) {
       setPhoneError(err.response?.data?.error || "Không tìm thấy nhân viên.");
     } finally {
@@ -1560,21 +1598,26 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleSubmit = async () => {
-    if (!offeredShift || !targetShift || !targetEmployee) return;
+    if (!offeredShift || !targetEmployee) return;
+    if (swapType === "exchange" && !targetShift) return;
     setSubmitting(true);
     const expiresAt = new Date(
       Date.now() + expiresHours * 3600 * 1000,
     ).toISOString();
     try {
       await api.post("/shifts/swap-requests/", {
-        swap_type: "exchange",
+        swap_type: swapType,
         offered_shift: offeredShift.id,
-        target_shift: targetShift.id,
+        target_shift: swapType === "exchange" ? targetShift?.id : null,
         partner: targetEmployee.id,
         message,
         expires_at: expiresAt,
       });
-      toast.success("Đã gửi yêu cầu đổi ca! Chờ đối tác xác nhận.");
+      toast.success(
+        swapType === "exchange"
+          ? "Đã gửi yêu cầu đổi ca! Chờ đối tác xác nhận."
+          : "Đã gửi yêu cầu nhượng ca! Chờ đối tác xác nhận."
+      );
       onClose();
     } catch {
     } finally {
@@ -1618,7 +1661,7 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h2 className="font-black text-slate-900 text-base">
-                Tạo yêu cầu đổi ca
+                {swapType === "exchange" ? "Tạo yêu cầu đổi ca" : "Tạo yêu cầu nhượng ca"}
               </h2>
               <div className="flex items-center gap-1.5 mt-0.5">
                 {(["offer", "target", "confirm"] as SwapStep[]).map((s, i) => (
@@ -1663,10 +1706,40 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="space-y-3"
+                className="space-y-4"
               >
-                <p className="text-xs font-black text-slate-400 uppercase tracking-wider">
-                  Chọn ca của bạn muốn đổi
+                {/* Type Selection */}
+                <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setSwapType("exchange")}
+                    className={cn(
+                      "flex-grow flex items-center justify-center py-2 rounded-lg text-xs font-bold transition-all",
+                      swapType === "exchange"
+                        ? "bg-white shadow-sm text-purple-700"
+                        : "text-slate-500",
+                    )}
+                  >
+                    Đổi ca (Có ca đối ứng)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSwapType("transfer")}
+                    className={cn(
+                      "flex-grow flex items-center justify-center py-2 rounded-lg text-xs font-bold transition-all",
+                      swapType === "transfer"
+                        ? "bg-white shadow-sm text-purple-700"
+                        : "text-slate-500",
+                    )}
+                  >
+                    Nhượng ca (Chỉ chuyển đi)
+                  </button>
+                </div>
+
+                <p className="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">
+                  {swapType === "exchange"
+                    ? "Chọn ca của bạn muốn đổi"
+                    : "Chọn ca của bạn muốn nhượng"}
                 </p>
                 {myShiftsLoading && (
                   <div className="flex justify-center py-8">
@@ -1720,189 +1793,284 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-4"
               >
-                {/* Mode tabs */}
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                  <button
-                    onClick={() => setSearchMode("phone")}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all",
-                      searchMode === "phone"
-                        ? "bg-white shadow-sm text-purple-700"
-                        : "text-slate-500",
-                    )}
-                  >
-                    <Phone className="h-3.5 w-3.5" /> Tìm theo SĐT
-                  </button>
-                  <button
-                    onClick={() => setSearchMode("daterange")}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all",
-                      searchMode === "daterange"
-                        ? "bg-white shadow-sm text-purple-700"
-                        : "text-slate-500",
-                    )}
-                  >
-                    <CalendarIcon className="h-3.5 w-3.5" /> Chọn khoảng thời
-                    gian
-                  </button>
-                </div>
-
-                {searchMode === "phone" && (
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <input
-                        value={phone}
+                {swapType === "transfer" ? (
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                        Chọn người nhận từ danh sách
+                      </label>
+                      <select
                         onChange={(e) => {
-                          setPhone(e.target.value);
-                          setPhoneError("");
+                          const emp = allEmployees.find(x => String(x.id) === e.target.value);
+                          if (emp) {
+                            setTargetEmployee(emp);
+                            setStep("confirm");
+                          }
                         }}
+                        value={targetEmployee?.id || ""}
                         className={inputCls}
-                        placeholder="Số điện thoại đồng nghiệp"
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handlePhoneSearch()
+                      >
+                        <option value="">-- Chọn đồng nghiệp nhận ca --</option>
+                        {allEmployees
+                          .filter((emp) => String(emp.id) !== String(user?.id))
+                          .map((emp) => (
+                            <option key={emp.id} value={emp.id}>{emp.full_name} ({emp.phone})</option>
+                          ))
                         }
-                      />
-                      <button
-                        onClick={handlePhoneSearch}
-                        disabled={phoneSearching || !phone.trim()}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5 transition-all shrink-0"
-                      >
-                        {phoneSearching ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Search className="h-4 w-4" />
-                        )}
-                        Tìm
-                      </button>
+                      </select>
                     </div>
-                    {phoneError && (
-                      <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                        <AlertCircle className="h-3.5 w-3.5" />
-                        {phoneError}
-                      </p>
-                    )}
-                    {foundEmployee && (
-                      <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 text-sm">
-                        <p className="font-black text-slate-900">
-                          {foundEmployee.full_name}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {foundEmployee.phone}
-                        </p>
-                      </div>
-                    )}
-                    {employeeShiftsLoading && (
-                      <div className="flex justify-center py-4">
-                        <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
-                      </div>
-                    )}
-                    {!employeeShiftsLoading &&
-                      foundEmployee &&
-                      employeeShifts.length === 0 && (
-                        <p className="text-xs text-slate-500 text-center py-4">
-                          Không có ca sắp tới.
-                        </p>
-                      )}
-                    {employeeShifts.map((shift) => (
-                      <button
-                        key={shift.id}
-                        onClick={() => selectTarget(shift, shift.employees[0])}
-                        className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 bg-white hover:border-purple-300 transition-all"
-                      >
-                        <p className="text-sm font-black text-slate-900">
-                          {fmtDate(shift.date)}
-                        </p>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          <Clock className="inline h-3 w-3 mr-1" />
-                          {fmtTime(shift.start_time)} –{" "}
-                          {fmtTime(shift.end_time)}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
 
-                {searchMode === "daterange" && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                          Từ ngày
-                        </label>
-                        <input
-                          type="date"
-                          value={fromDate}
-                          min={minSwapDate}
-                          onChange={(e) => setFromDate(e.target.value)}
-                          className={inputCls}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                          Đến ngày
-                        </label>
-                        <input
-                          type="date"
-                          value={toDate}
-                          min={fromDate}
-                          onChange={(e) => setToDate(e.target.value)}
-                          className={inputCls}
-                        />
-                      </div>
+                    <div className="relative flex py-2 items-center shrink-0">
+                      <div className="flex-grow border-t border-slate-100"></div>
+                      <span className="flex-shrink mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">Hoặc tìm theo SĐT</span>
+                      <div className="flex-grow border-t border-slate-100"></div>
                     </div>
-                    <button
-                      onClick={handleRangeSearch}
-                      disabled={rangeLoading}
-                      className="w-full py-2.5 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-                    >
-                      {rangeLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Search className="h-4 w-4" />
-                      )}
-                      Tìm ca
-                    </button>
-                    {rangeShifts.length === 0 && !rangeLoading && toDate && (
-                      <p className="text-xs text-slate-500 text-center py-2">
-                        Không có ca nào trong khoảng này.
-                      </p>
-                    )}
+
                     <div className="space-y-3">
-                      {rangeShifts.map((shift) => (
-                        <div
-                          key={shift.id}
-                          className="bg-white border border-slate-100 rounded-2xl overflow-hidden"
+                      <div className="flex gap-2">
+                        <input
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value);
+                            setPhoneError("");
+                          }}
+                          className={inputCls}
+                          placeholder="Số điện thoại đồng nghiệp"
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handlePhoneSearch()
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={handlePhoneSearch}
+                          disabled={phoneSearching || !phone.trim()}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5 transition-all shrink-0"
                         >
-                          <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100">
-                            <p className="text-xs font-black text-slate-700">
-                              {fmtDate(shift.date)} ·{" "}
+                          {phoneSearching ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                          Tìm
+                        </button>
+                      </div>
+                      {phoneError && (
+                        <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          {phoneError}
+                        </p>
+                      )}
+                      {foundEmployee && (
+                        <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 flex justify-between items-center text-sm">
+                          <div>
+                            <p className="font-black text-slate-900">
+                              {foundEmployee.full_name}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {foundEmployee.phone}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTargetEmployee(foundEmployee);
+                              setStep("confirm");
+                            }}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 transition-colors"
+                          >
+                            Chọn người này
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mode tabs */}
+                    <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                      <button
+                        onClick={() => setSearchMode("phone")}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all",
+                          searchMode === "phone"
+                            ? "bg-white shadow-sm text-purple-700"
+                            : "text-slate-500",
+                        )}
+                      >
+                        <Phone className="h-3.5 w-3.5" /> Tìm theo SĐT
+                      </button>
+                      <button
+                        onClick={() => setSearchMode("daterange")}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all",
+                          searchMode === "daterange"
+                            ? "bg-white shadow-sm text-purple-700"
+                            : "text-slate-500",
+                        )}
+                      >
+                        <CalendarIcon className="h-3.5 w-3.5" /> Chọn khoảng thời
+                        gian
+                      </button>
+                    </div>
+
+                    {searchMode === "phone" && (
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <input
+                            value={phone}
+                            onChange={(e) => {
+                              setPhone(e.target.value);
+                              setPhoneError("");
+                            }}
+                            className={inputCls}
+                            placeholder="Số điện thoại đồng nghiệp"
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && handlePhoneSearch()
+                            }
+                          />
+                          <button
+                            onClick={handlePhoneSearch}
+                            disabled={phoneSearching || !phone.trim()}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1.5 transition-all shrink-0"
+                          >
+                            {phoneSearching ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Search className="h-4 w-4" />
+                            )}
+                            Tìm
+                          </button>
+                        </div>
+                        {phoneError && (
+                          <p className="text-xs text-red-500 font-medium flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            {phoneError}
+                          </p>
+                        )}
+                        {foundEmployee && (
+                          <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 text-sm">
+                            <p className="font-black text-slate-900">
+                              {foundEmployee.full_name}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {foundEmployee.phone}
+                            </p>
+                          </div>
+                        )}
+                        {employeeShiftsLoading && (
+                          <div className="flex justify-center py-4">
+                            <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
+                          </div>
+                        )}
+                        {!employeeShiftsLoading &&
+                          foundEmployee &&
+                          employeeShifts.length === 0 && (
+                            <p className="text-xs text-slate-500 text-center py-4">
+                              Không có ca sắp tới.
+                            </p>
+                          )}
+                        {employeeShifts.map((shift) => (
+                          <button
+                            key={shift.id}
+                            onClick={() => selectTarget(shift, shift.employees[0])}
+                            className="w-full text-left p-4 rounded-2xl border-2 border-slate-100 bg-white hover:border-purple-300 transition-all"
+                          >
+                            <p className="text-sm font-black text-slate-900">
+                              {fmtDate(shift.date)}
+                            </p>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                              <Clock className="inline h-3 w-3 mr-1" />
                               {fmtTime(shift.start_time)} –{" "}
                               {fmtTime(shift.end_time)}
                             </p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {searchMode === "daterange" && (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                              Từ ngày
+                            </label>
+                            <input
+                              type="date"
+                              value={fromDate}
+                              min={minSwapDate}
+                              onChange={(e) => setFromDate(e.target.value)}
+                              className={inputCls}
+                            />
                           </div>
-                          <div className="divide-y divide-slate-50">
-                            {shift.employees.map((emp) => (
-                              <button
-                                key={emp.id}
-                                onClick={() => selectTarget(shift, emp)}
-                                className="w-full flex items-center justify-between px-4 py-3 hover:bg-purple-50 transition-colors group"
-                              >
-                                <div className="text-left">
-                                  <p className="text-sm font-bold text-slate-900">
-                                    {emp.full_name}
-                                  </p>
-                                  <p className="text-xs text-slate-400">
-                                    {emp.phone}
-                                  </p>
-                                </div>
-                                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-purple-500 transition-colors" />
-                              </button>
-                            ))}
+                          <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                              Đến ngày
+                            </label>
+                            <input
+                              type="date"
+                              value={toDate}
+                              min={fromDate}
+                              onChange={(e) => setToDate(e.target.value)}
+                              className={inputCls}
+                            />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        <button
+                          onClick={handleRangeSearch}
+                          disabled={rangeLoading}
+                          className="w-full py-2.5 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                        >
+                          {rangeLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                          Tìm ca
+                        </button>
+                        {rangeShifts.length === 0 && !rangeLoading && toDate && (
+                          <p className="text-xs text-slate-500 text-center py-2">
+                            Không có ca nào trong khoảng này.
+                          </p>
+                        )}
+                        <div className="space-y-3">
+                          {rangeShifts.map((shift) => (
+                            <div
+                              key={shift.id}
+                              className="bg-white border border-slate-100 rounded-2xl overflow-hidden"
+                            >
+                              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+                                <p className="text-xs font-black text-slate-700">
+                                  {fmtDate(shift.date)} ·{" "}
+                                  {fmtTime(shift.start_time)} –{" "}
+                                  {fmtTime(shift.end_time)}
+                                </p>
+                              </div>
+                              <div className="divide-y divide-slate-50">
+                                {shift.employees.map((emp) => (
+                                  <button
+                                    key={emp.id}
+                                    onClick={() => selectTarget(shift, emp)}
+                                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-purple-50 transition-colors group"
+                                  >
+                                    <div className="text-left">
+                                      <p className="text-sm font-bold text-slate-900">
+                                        {emp.full_name}
+                                      </p>
+                                      <p className="text-xs text-slate-400">
+                                        {emp.phone}
+                                      </p>
+                                    </div>
+                                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-purple-500 transition-colors" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </motion.div>
             )}
@@ -1910,7 +2078,6 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
             {/* Step 3 — Confirm */}
             {step === "confirm" &&
               offeredShift &&
-              targetShift &&
               targetEmployee && (
                 <motion.div
                   key="confirm"
@@ -1920,38 +2087,63 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
                   className="space-y-4"
                 >
                   <p className="text-xs font-black text-slate-400 uppercase tracking-wider">
-                    Xác nhận yêu cầu đổi ca
+                    Xác nhận yêu cầu {swapType === "exchange" ? "đổi ca" : "nhượng ca"}
                   </p>
 
-                  <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-white rounded-xl p-3 border border-purple-100">
-                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
-                          Ca của bạn
+                  {swapType === "exchange" && targetShift ? (
+                    <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 bg-white rounded-xl p-3 border border-purple-100">
+                          <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
+                            Ca của bạn
+                          </p>
+                          <p className="text-sm font-black text-slate-900">
+                            {fmtDate(offeredShift.date)}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {fmtTime(offeredShift.start_time)} –{" "}
+                            {fmtTime(offeredShift.end_time)}
+                          </p>
+                        </div>
+                        <ArrowLeftRight className="h-5 w-5 text-purple-400 shrink-0" />
+                        <div className="flex-1 bg-white rounded-xl p-3 border border-purple-100">
+                          <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
+                            Ca của {targetEmployee.full_name.split(" ").pop()}
+                          </p>
+                          <p className="text-sm font-black text-slate-900">
+                            {fmtDate(targetShift.date)}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {fmtTime(targetShift.start_time)} –{" "}
+                            {fmtTime(targetShift.end_time)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 space-y-3">
+                      <div className="bg-white rounded-xl p-4 border border-purple-100 space-y-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                          Ca làm nhượng đi
                         </p>
                         <p className="text-sm font-black text-slate-900">
                           {fmtDate(offeredShift.date)}
                         </p>
                         <p className="text-xs text-slate-500">
+                          <Clock className="inline h-3 w-3 mr-1" />
                           {fmtTime(offeredShift.start_time)} –{" "}
                           {fmtTime(offeredShift.end_time)}
                         </p>
                       </div>
-                      <ArrowLeftRight className="h-5 w-5 text-purple-400 shrink-0" />
-                      <div className="flex-1 bg-white rounded-xl p-3 border border-purple-100">
-                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
-                          Ca của {targetEmployee.full_name.split(" ").pop()}
-                        </p>
-                        <p className="text-sm font-black text-slate-900">
-                          {fmtDate(targetShift.date)}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {fmtTime(targetShift.start_time)} –{" "}
-                          {fmtTime(targetShift.end_time)}
-                        </p>
+                      <div className="text-center p-1 text-slate-500 text-xs font-medium">
+                        Sẽ được nhượng trực tiếp cho đồng nghiệp:
+                      </div>
+                      <div className="bg-white rounded-xl p-3 border border-purple-100 text-center">
+                        <p className="text-sm font-black text-slate-950">{targetEmployee.full_name}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{targetEmployee.phone}</p>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -1962,7 +2154,7 @@ function SwapCreateModal({ onClose }: { onClose: () => void }) {
                       onChange={(e) => setMessage(e.target.value)}
                       rows={2}
                       className={inputCls + " resize-none"}
-                      placeholder="Lý do muốn đổi ca..."
+                      placeholder={swapType === "exchange" ? "Lý do muốn đổi ca..." : "Lý do muốn nhượng ca..."}
                     />
                   </div>
 

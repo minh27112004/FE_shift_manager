@@ -29,7 +29,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     const method = response.config.method?.toLowerCase() ?? '';
-    const successMsg = response.data?.detail || response.data?.message;
+    let successMsg = response.data?.detail || response.data?.message;
+    if (response.data && typeof response.data === 'object' && 'id' in response.data) {
+      successMsg = response.data?.detail;
+    }
+
     if (!SILENT_METHODS.has(method) && successMsg) {
       toast.success(successMsg);
     }
@@ -37,30 +41,30 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    
+
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('auth/login/')) {
       originalRequest._retry = true;
-      
+
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) {
           throw new Error('No refresh token');
         }
-        
+
         const response = await axios.post(`${baseURL}auth/refresh/`, {
           refresh: refreshToken
         });
-        
+
         const newAccessToken = response.data.access;
         localStorage.setItem('access_token', newAccessToken);
 
         if (response.data.refresh) {
-            localStorage.setItem('refresh_token', response.data.refresh);
+          localStorage.setItem('refresh_token', response.data.refresh);
         }
-        
+
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
-        
+
       } catch (refreshError) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
@@ -69,12 +73,12 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-    
+
     // Auto-toast lỗi từ BE
     if (error.response) {
       const data = error.response.data;
       const status = error.response.status;
-      
+
       let msg =
         data?.detail ||
         data?.error ||
