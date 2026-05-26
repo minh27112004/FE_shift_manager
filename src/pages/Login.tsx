@@ -347,9 +347,9 @@ export default function Login() {
 
               <div className="space-y-6">
                 {[
-                  "Tối ưu hóa lịch trình bằng AI",
-                  "Quản lý bảng lương thời gian thực",
-                  "Giao tiếp nhóm tập trung",
+                  "Quản lý & phân công ca làm việc",
+                  "Đổi ca, nhượng ca linh hoạt",
+                  "Chấm công & báo cáo tự động",
                 ].map((text) => (
                   <div key={text} className="flex items-center gap-3">
                     <div className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center">
