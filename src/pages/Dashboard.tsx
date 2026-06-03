@@ -36,6 +36,7 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
   const [pendingSwaps, setPendingSwaps] = useState<number | null>(null);
   const [todayRecords, setTodayRecords] = useState<any[]>([]);
+  const [openShiftsCount, setOpenShiftsCount] = useState<number | null>(null);
 
   useEffect(() => {
     api.get('/employees/').then(r => setEmployeeCount(r.data.length)).catch(() => {});
@@ -44,6 +45,18 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
       setPendingSwaps(pending.length);
     }).catch(() => {});
     api.get('/attendance/records/today/').then(r => setTodayRecords(r.data)).catch(() => {});
+
+    // Lấy danh sách ca làm việc tháng này từ Backend để đếm ca trống
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+    const fromDate = `${year}-${month}-01`;
+    const toDate = `${year}-${month}-${lastDay}`;
+    api.get(`/shifts/?from=${fromDate}&to=${toDate}`).then(r => {
+      const openShifts = r.data.filter((s: any) => s.is_open);
+      setOpenShiftsCount(openShifts.length);
+    }).catch(() => {});
   }, []);
 
   const todayStr = (() => {
@@ -82,7 +95,7 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
     },
     {
       label: 'Ca trống tháng này',
-      value: shifts.filter(s => s.backendData?.is_open).length.toString(),
+      value: openShiftsCount !== null ? openShiftsCount.toString() : '—',
       trend: 'Chưa có người nhận',
       icon: Wallet,
       color: 'bg-[#e2e2e9] text-[#3e3f45]',
