@@ -431,7 +431,6 @@ function StoreSettings() {
   const [stores, setStores] = useState<StoreData[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState<Partial<StoreData>>({});
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">(
@@ -449,78 +448,7 @@ function StoreSettings() {
       .finally(() => setLoading(false));
   }, []);
 
-  const startCreate = () => {
-    setIsCreating(true);
-    setEditingId(null);
-    setForm({
-      name: "",
-      address: "",
-      phone: "",
-      geo_latitude: "10.77609000",
-      geo_longitude: "106.69508000",
-      geo_radius_meters: 100,
-    });
-    setSaveStatus("idle");
-    setErrorMsg("");
-  };
-
-  const cancelCreate = () => {
-    setIsCreating(false);
-    setForm({});
-    setSaveStatus("idle");
-  };
-
-  const handleCreate = async () => {
-    if (!form.name || !form.address) {
-      setErrorMsg("Vui lòng điền đầy đủ tên và địa chỉ cửa hàng.");
-      setSaveStatus("error");
-      return;
-    }
-    setSaving(true);
-    setSaveStatus("idle");
-    try {
-      const res = await api.post("/stores/", {
-        name: form.name,
-        address: form.address,
-        phone: form.phone,
-        geo_latitude: form.geo_latitude,
-        geo_longitude: form.geo_longitude,
-        geo_radius_meters: Number(form.geo_radius_meters),
-      });
-      setStores((prev) => [res.data, ...prev]);
-      setSaveStatus("success");
-      toast.success("Thêm cửa hàng thành công!");
-      setTimeout(() => {
-        setIsCreating(false);
-        setForm({});
-        setSaveStatus("idle");
-      }, 1200);
-    } catch (err: any) {
-      const data = err.response?.data;
-      setErrorMsg(
-        data ? Object.values(data).flat().join(", ") : "Thêm cửa hàng thất bại.",
-      );
-      setSaveStatus("error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa cửa hàng này? Hành động này không thể hoàn tác.")) {
-      return;
-    }
-    try {
-      await api.delete(`/stores/${id}/`);
-      setStores((prev) => prev.filter((s) => s.id !== id));
-      toast.success("Xóa cửa hàng thành công!");
-    } catch (err: any) {
-      toast.error("Xóa cửa hàng thất bại.");
-    }
-  };
-
   const startEdit = (store: StoreData) => {
-    setIsCreating(false);
     setEditingId(store.id);
     setForm({ ...store });
     setSaveStatus("idle");
@@ -601,15 +529,8 @@ function StoreSettings() {
       <div className="flex items-center justify-between mb-4 ml-1">
         <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
           <Store className="h-3.5 w-3.5" />
-          Cài đặt cửa hàng
+          Cấu hình cửa hàng
         </h2>
-        <button
-          onClick={startCreate}
-          disabled={isCreating}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#005ac2] text-white text-xs font-black rounded-xl hover:bg-[#004fab] transition-all shadow-md shadow-[#005ac2]/10 disabled:opacity-50"
-        >
-          <Plus className="h-3.5 w-3.5" /> Thêm cửa hàng
-        </button>
       </div>
 
       <div className="space-y-4">
@@ -619,150 +540,7 @@ function StoreSettings() {
           </div>
         )}
 
-        {isCreating && (
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            {/* Store header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-green-50 rounded-xl flex items-center justify-center">
-                  <Store className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900">Thêm cửa hàng mới</h3>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={cancelCreate}
-                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={handleCreate}
-                  disabled={saving}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 py-2 text-sm font-black rounded-xl transition-all",
-                    saveStatus === "success"
-                      ? "bg-green-500 text-white"
-                      : "bg-[#005ac2] text-white hover:bg-[#004fab] shadow-lg shadow-[#005ac2]/20",
-                  )}
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : saveStatus === "success" ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4" /> Đã lưu
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" /> Lưu
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Edit mode inputs */}
-            <div className="px-6 py-5 space-y-4">
-              {saveStatus === "error" && (
-                <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3">
-                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-700 font-medium">
-                    {errorMsg}
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Tên cửa hàng *">
-                  <input
-                    value={form.name ?? ""}
-                    onChange={(e) => set("name", e.target.value)}
-                    className={inputCls}
-                    placeholder="Tên cửa hàng"
-                  />
-                </Field>
-                <Field label="Số điện thoại">
-                  <input
-                    value={form.phone ?? ""}
-                    onChange={(e) => set("phone", e.target.value)}
-                    className={inputCls}
-                    placeholder="0912345678"
-                  />
-                </Field>
-              </div>
-
-              <Field label="Địa chỉ *">
-                <input
-                  value={form.address ?? ""}
-                  onChange={(e) => set("address", e.target.value)}
-                  className={inputCls}
-                  placeholder="Số nhà, đường, quận, thành phố"
-                />
-              </Field>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Field label="Vĩ độ (Latitude)">
-                  <input
-                    type="number"
-                    step="0.00000001"
-                    value={form.geo_latitude ?? ""}
-                    onChange={(e) => set("geo_latitude", e.target.value)}
-                    className={inputCls}
-                    placeholder="10.77609"
-                  />
-                </Field>
-                <Field label="Kinh độ (Longitude)">
-                  <input
-                    type="number"
-                    step="0.00000001"
-                    value={form.geo_longitude ?? ""}
-                    onChange={(e) => set("geo_longitude", e.target.value)}
-                    className={inputCls}
-                    placeholder="106.69508"
-                  />
-                </Field>
-                <Field label="Bán kính check-in (m)">
-                  <input
-                    type="number"
-                    min="10"
-                    max="2000"
-                    value={form.geo_radius_meters ?? ""}
-                    onChange={(e) =>
-                      set("geo_radius_meters", e.target.value)
-                    }
-                    className={inputCls}
-                    placeholder="100"
-                  />
-                </Field>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleGetLocation}
-                  disabled={locating}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-[#005ac2] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {locating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Navigation className="h-4 w-4" />
-                  )}
-                  {locating ? "Đang lấy vị trí..." : "Lấy vị trí hiện tại"}
-                </button>
-                {locError && (
-                  <p className="text-xs text-red-500 font-medium flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5" /> {locError}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!loading && stores.length === 0 && !isCreating && (
+        {!loading && stores.length === 0 && (
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 text-center">
             <Store className="h-10 w-10 text-slate-200 mx-auto mb-3" />
             <p className="text-sm font-bold text-slate-500">
@@ -793,14 +571,7 @@ function StoreSettings() {
                       onClick={() => startEdit(store)}
                       className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-[#005ac2] hover:text-white transition-all"
                     >
-                      <Edit3 className="h-4 w-4" /> Chỉnh sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(store.id)}
-                      className="flex items-center justify-center p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                      title="Xóa cửa hàng"
-                    >
-                      <Trash2 className="h-4 w-4" />
+                      <Edit3 className="h-4 w-4" /> Chỉnh sửa cấu hình
                     </button>
                   </div>
                 ) : (
