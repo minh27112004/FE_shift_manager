@@ -85,6 +85,22 @@ function AdminRegistration() {
   const [swapRequests, setSwapRequests] = useState<any[]>([]);
   const [swapLoading, setSwapLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchShifts(),
+        fetchSwapRequests(false)
+      ]);
+      toast.success("Đã cập nhật danh sách mới nhất");
+    } catch {
+      toast.error("Không thể tải lại dữ liệu");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const fmtShiftDateTime = (shiftData: any) => {
     if (!shiftData) return "";
@@ -240,11 +256,22 @@ function AdminRegistration() {
               Duyệt hoặc từ chối nguyện vọng ca, nhượng ca và đổi ca
             </p>
           </div>
-          {totalPending > 0 && (
-            <span className="px-3 py-1.5 bg-red-100 text-red-700 text-sm font-black rounded-xl shrink-0">
-              {totalPending} đang chờ
-            </span>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#005ac2] hover:bg-slate-50 transition-all shadow-2xs active:scale-95 flex items-center justify-center gap-1.5 font-bold text-xs"
+              title="Làm mới"
+            >
+              <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+              Tải lại
+            </button>
+            {totalPending > 0 && (
+              <span className="px-3 py-1.5 bg-red-100 text-red-700 text-sm font-black rounded-xl shrink-0">
+                {totalPending} đang chờ
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
