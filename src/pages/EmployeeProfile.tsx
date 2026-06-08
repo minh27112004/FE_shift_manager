@@ -25,6 +25,12 @@ import { toast } from '../lib/toast';
 export default function EmployeeProfile() {
   const { id } = useParams();
   const { user: currentUser } = useAuth();
+  
+  console.log("EmployeeProfile Debug:", {
+    id,
+    currentUserRole: currentUser?.role,
+    shouldShowAttendance: (!id || id === 'me') || currentUser?.role === 'admin' || currentUser?.role === 'manager'
+  });
   const [employee, setEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -80,7 +86,6 @@ export default function EmployeeProfile() {
       await fetchEmployee();
       toast.success('Cập nhật hồ sơ thành công!');
     } catch {
-      // axios interceptor đã tự toast lỗi từ backend
     }
   };
 
@@ -100,7 +105,7 @@ export default function EmployeeProfile() {
   const fullName = employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.email || 'Nhân viên';
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="p-8 pb-12"
@@ -129,7 +134,7 @@ export default function EmployeeProfile() {
           </div>
           <div className="absolute bottom-4 right-8">
             {(!id || id === 'me') && (
-              <button 
+              <button
                 onClick={() => setIsEditing(!isEditing)}
                 className="px-6 py-2.5 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-white/30 transition-all"
               >
@@ -141,7 +146,7 @@ export default function EmployeeProfile() {
         </div>
 
         {isEditing && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             className="mt-20 bg-white p-8 rounded-3xl shadow-sm border border-slate-100 mb-8"
@@ -153,7 +158,7 @@ export default function EmployeeProfile() {
                 <input
                   type="text"
                   value={formData.full_name}
-                  onChange={e => setFormData({...formData, full_name: e.target.value})}
+                  onChange={e => setFormData({ ...formData, full_name: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
@@ -162,7 +167,7 @@ export default function EmployeeProfile() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
@@ -171,7 +176,7 @@ export default function EmployeeProfile() {
                 <input
                   type="text"
                   value={formData.telegram_chat_id}
-                  onChange={e => setFormData({...formData, telegram_chat_id: e.target.value})}
+                  onChange={e => setFormData({ ...formData, telegram_chat_id: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                   placeholder="ID chat nhận thông báo..."
                 />
@@ -181,7 +186,7 @@ export default function EmployeeProfile() {
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={e => setFormData({...formData, address: e.target.value})}
+                  onChange={e => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
@@ -190,7 +195,7 @@ export default function EmployeeProfile() {
                 <input
                   type="text"
                   value={formData.emergency_contact}
-                  onChange={e => setFormData({...formData, emergency_contact: e.target.value})}
+                  onChange={e => setFormData({ ...formData, emergency_contact: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none"
                 />
               </div>
@@ -319,14 +324,21 @@ export default function EmployeeProfile() {
         </div>
 
         {/* Tính công */}
-        {(!id || id === 'me') && <AttendanceSection />}
+        {((!id || id === 'me') || currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
+          <AttendanceSection 
+            userId={id && id !== 'me' ? Number(id) : undefined} 
+            employeeName={fullName}
+          />
+        )}
       </div>
     </motion.div>
   );
 }
 
 interface AttendanceRecord {
-  id: number;
+  id: number | null;
+  shift: number;
+  user: number;
   shift_date: string;
   shift_start: string;
   shift_end: string;
@@ -336,9 +348,16 @@ interface AttendanceRecord {
   worked_minutes: number | null;
   is_late: boolean;
   late_minutes: number;
+  auto_checkout?: boolean;
+  is_manual_override?: boolean;
+  overridden_by_name?: string;
+  override_reason?: string;
 }
 
-function AttendanceSection() {
+function AttendanceSection({ userId, employeeName }: { userId?: number; employeeName: string }) {
+  const { user: currentUser } = useAuth();
+  const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager';
+
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -346,20 +365,38 @@ function AttendanceSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  // Manual override states
+  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
+  const [overrideData, setOverrideData] = useState({
+    checkin_at: '',
+    checkout_at: '',
+    reason: '',
+  });
+  const [overrideError, setOverrideError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchRecords = () => {
     const from = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const to = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
     setLoading(true);
     setError('');
-    api.get(`/attendance/records/me/?from=${from}&to=${to}`)
+    const url = userId
+      ? `/attendance/records/user/${userId}/?from=${from}&to=${to}`
+      : `/attendance/records/me/?from=${from}&to=${to}`;
+    api.get(url)
       .then(r => setRecords(r.data))
       .catch(err => {
         setRecords([]);
         setError(err.response?.data?.detail || 'Không thể tải dữ liệu chấm công.');
       })
       .finally(() => setLoading(false));
-  }, [year, month]);
+  };
+
+  useEffect(() => {
+    fetchRecords();
+  }, [year, month, userId]);
 
   const prevMonth = () => {
     if (month === 1) { setMonth(12); setYear(y => y - 1); }
@@ -383,12 +420,82 @@ function AttendanceSection() {
     return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const isShiftEnded = (r: AttendanceRecord) => {
+    if (!r.shift_end || !r.shift_start) return false;
+    const [endHour, endMin] = r.shift_end.split(':').map(Number);
+    const shiftEndDt = new Date(r.shift_date);
+    shiftEndDt.setHours(endHour, endMin, 0, 0);
+
+    const [startHour, startMin] = r.shift_start.split(':').map(Number);
+    if (endHour < startHour) {
+      shiftEndDt.setDate(shiftEndDt.getDate() + 1);
+    }
+    return shiftEndDt < new Date();
+  };
+
+  const toLocalDatetimeLocalString = (dateStr: string | null) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+  };
+
+  const getShiftDatetimeLocal = (shiftDate: string, shiftTime: string) => {
+    return `${shiftDate}T${shiftTime.slice(0, 5)}`;
+  };
+
+  const handleOpenOverrideModal = (record: AttendanceRecord) => {
+    setSelectedRecord(record);
+    setOverrideError('');
+    setOverrideData({
+      checkin_at: toLocalDatetimeLocalString(record.checkin_at) || getShiftDatetimeLocal(record.shift_date, record.shift_start),
+      checkout_at: toLocalDatetimeLocalString(record.checkout_at) || getShiftDatetimeLocal(record.shift_date, record.shift_end),
+      reason: record.override_reason || '',
+    });
+    setIsOverrideModalOpen(true);
+  };
+
+  const handleOverrideSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRecord) return;
+    if (!overrideData.reason.trim()) {
+      setOverrideError('Lý do chỉnh sửa là bắt buộc.');
+      return;
+    }
+    const checkinDate = new Date(overrideData.checkin_at);
+    const checkoutDate = overrideData.checkout_at ? new Date(overrideData.checkout_at) : null;
+    if (checkoutDate && checkoutDate < checkinDate) {
+      setOverrideError('Thời gian check-out không được trước thời gian check-in.');
+      return;
+    }
+
+    setSubmitting(true);
+    setOverrideError('');
+    try {
+      await api.post(`/attendance/records/override-shift/`, {
+        shift_id: selectedRecord.shift,
+        user_id: selectedRecord.user,
+        checkin_at: overrideData.checkin_at,
+        checkout_at: overrideData.checkout_at || null,
+        reason: overrideData.reason,
+      });
+      toast.success('Chỉnh sửa chấm công thành công!');
+      setIsOverrideModalOpen(false);
+      fetchRecords();
+    } catch (err: any) {
+      setOverrideError(err.response?.data?.detail || 'Lỗi hệ thống khi chỉnh sửa chấm công.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const summary = [
     { label: 'Ca hoàn thành', value: `${totalShifts} ca`, icon: Calendar, color: 'bg-blue-50 text-blue-600' },
     { label: 'Tổng giờ làm', value: `${totalHours}h`, icon: Clock, color: 'bg-green-50 text-green-600' },
     { label: 'Số ca đi muộn', value: `${lateCount} ca`, icon: AlertTriangle, color: lateCount > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400' },
     { label: 'Tổng phút muộn', value: `${totalLateMinutes} phút`, icon: Clock, color: totalLateMinutes > 0 ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-400' },
   ];
+
 
   return (
     <div className="mt-10">
@@ -423,7 +530,7 @@ function AttendanceSection() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in duration-300">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 text-[#005ac2] animate-spin" />
@@ -449,11 +556,14 @@ function AttendanceSection() {
                   <th className="text-left px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Check-out</th>
                   <th className="text-right px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Giờ làm</th>
                   <th className="text-center px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Trạng thái</th>
+                  {isAdminOrManager && (
+                    <th className="text-center px-5 py-3 text-xs font-black text-slate-400 uppercase tracking-wider">Thao tác</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {records.map(r => (
-                  <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={r.id || `placeholder-${r.shift}-${r.user}`} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-5 py-4 font-bold text-slate-700">
                       {new Date(r.shift_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
                     </td>
@@ -466,28 +576,60 @@ function AttendanceSection() {
                       {r.worked_minutes != null ? `${(r.worked_minutes / 60).toFixed(1)}h` : '—'}
                     </td>
                     <td className="px-5 py-4 text-center">
-                      {!r.checkin_at ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-400 text-xs font-black">
-                          <Clock className="h-3.5 w-3.5" />
-                          Chưa check-in
-                        </span>
-                      ) : !r.checkout_at ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-500 text-xs font-black">
-                          <Clock className="h-3.5 w-3.5" />
-                          Chưa check-out
-                        </span>
-                      ) : r.is_late ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-black">
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          Muộn {r.late_minutes}p
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 text-green-600 text-xs font-black">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Hoàn thành
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 justify-center">
+                        {!r.checkin_at ? (
+                          isShiftEnded(r) ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 text-xs font-black">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              Vắng mặt
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-400 text-xs font-black">
+                              <Clock className="h-3.5 w-3.5" />
+                              Chưa check-in
+                            </span>
+                          )
+                        ) : r.auto_checkout ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-500 text-xs font-black" title="Hệ thống tự động chốt ca vì quên checkout">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            Quên checkout
+                          </span>
+                        ) : !r.checkout_at ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-500 text-xs font-black">
+                            <Clock className="h-3.5 w-3.5" />
+                            Chưa check-out
+                          </span>
+                        ) : r.is_late ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-black">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            Muộn {r.late_minutes}p
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 text-green-600 text-xs font-black">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Hoàn thành
+                          </span>
+                        )}
+                        {r.is_manual_override && (
+                          <span 
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black cursor-help uppercase tracking-wider" 
+                            title={`Chỉnh sửa bởi ${r.overridden_by_name || 'Admin'}\nLý do: ${r.override_reason}`}
+                          >
+                            Đã sửa
+                          </span>
+                        )}
+                      </div>
                     </td>
+                    {isAdminOrManager && (
+                      <td className="px-5 py-4 text-center">
+                        <button
+                          onClick={() => handleOpenOverrideModal(r)}
+                          className="px-4 py-2 bg-gradient-to-r from-[#005ac2]/10 to-[#5f5c78]/10 text-[#005ac2] text-xs font-black uppercase tracking-widest rounded-xl hover:from-[#005ac2] hover:to-[#5f5c78] hover:text-white transition-all shadow-sm duration-300"
+                        >
+                          Sửa
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -495,6 +637,96 @@ function AttendanceSection() {
           </div>
         )}
       </div>
+
+      {/* Manual Override Modal */}
+      {isOverrideModalOpen && selectedRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
+            onClick={() => setIsOverrideModalOpen(false)}
+          ></div>
+          
+          {/* Modal Container */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative w-full max-w-lg bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 overflow-hidden z-10"
+          >
+            <h3 className="text-xl font-black text-slate-900 tracking-tight mb-1">
+              Chỉnh sửa chấm công
+            </h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+              Nhân viên: {employeeName} <br /> 
+              Ngày ca làm: {new Date(selectedRecord.shift_date).toLocaleDateString('vi-VN')} ({selectedRecord.shift_start?.slice(0, 5)} - {selectedRecord.shift_end?.slice(0, 5)})
+            </p>
+
+            <form onSubmit={handleOverrideSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block">
+                  Thời gian Check-in <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={overrideData.checkin_at}
+                  onChange={e => setOverrideData({ ...overrideData, checkin_at: e.target.value })}
+                  required
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none font-bold text-slate-700"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block">
+                  Thời gian Check-out
+                </label>
+                <input
+                  type="datetime-local"
+                  value={overrideData.checkout_at}
+                  onChange={e => setOverrideData({ ...overrideData, checkout_at: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none font-bold text-slate-700"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block">
+                  Lý do chỉnh sửa <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={overrideData.reason}
+                  onChange={e => setOverrideData({ ...overrideData, reason: e.target.value })}
+                  required
+                  rows={3}
+                  placeholder="Nhập lý do bắt buộc (ví dụ: Quên check-in/out, máy quét lỗi...)"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-sm focus:ring-2 focus:ring-[#005ac2]/20 outline-none text-slate-700 placeholder:text-slate-400 placeholder:font-normal"
+                />
+              </div>
+
+              {overrideError && (
+                <p className="text-xs font-bold text-red-500 animate-pulse">{overrideError}</p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsOverrideModalOpen(false)}
+                  className="px-5 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors font-black text-xs uppercase tracking-widest rounded-xl"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 bg-[#005ac2] text-white hover:bg-[#004fab] transition-all font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-[#005ac2]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
+

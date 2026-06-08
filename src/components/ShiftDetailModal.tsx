@@ -108,7 +108,6 @@ export function ShiftDetailModal({ shift, onClose, onOpenQR, userRole }: ShiftDe
       setShowAddModal(false);
       setSelectedEmpId('');
       await fetchShiftData();
-      await fetchShifts();
     } catch (err: any) {
       console.error(err);
     } finally {
@@ -123,7 +122,6 @@ export function ShiftDetailModal({ shift, onClose, onOpenQR, userRole }: ShiftDe
     try {
       await unassignEmployee(shift.id, userId);
       await fetchShiftData();
-      await fetchShifts();
     } catch (err: any) {
       console.error(err);
     } finally {

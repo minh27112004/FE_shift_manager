@@ -16,7 +16,7 @@ export interface Shift {
 interface ShiftContextType {
   shifts: Shift[];
   isLoading: boolean;
-  fetchShifts: () => Promise<void>;
+  fetchShifts: (from?: string, to?: string) => Promise<void>;
   addShift: (shift: any) => Promise<void>;
   removeShift: (id: string | number) => Promise<void>;
   claimShift: (id: string | number) => Promise<void>;
@@ -31,11 +31,28 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated } = useAuth();
-  const fetchShifts = useCallback(async () => {
+  const fetchShifts = useCallback(async (from?: string, to?: string) => {
     if (!isAuthenticated) return;
     setIsLoading(true);
     try {
-      const response = await api.get('/shifts/');
+      const params: Record<string, string> = {};
+      if (from) {
+        params.from = from;
+      } else {
+        const past = new Date();
+        past.setDate(past.getDate() - 60);
+        params.from = past.toISOString().split('T')[0];
+      }
+
+      if (to) {
+        params.to = to;
+      } else {
+        const future = new Date();
+        future.setDate(future.getDate() + 120);
+        params.to = future.toISOString().split('T')[0];
+      }
+
+      const response = await api.get('/shifts/', { params });
       const rawShifts = response.data;
       const formattedShifts: Shift[] = rawShifts.map((s: any) => {
         const timeStr = `${s.start_time?.substring(0, 5)} - ${s.end_time?.substring(0, 5)}`;

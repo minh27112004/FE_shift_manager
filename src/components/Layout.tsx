@@ -262,9 +262,18 @@ export default function Layout({ children }: LayoutProps) {
                 <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#9f403d]" />
               )}
             </Link>
-            <button className="hidden sm:flex rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors">
-              <MessageSquare className="h-5 w-5" />
-            </button>
+            {role === "employee" ? (
+              <Link
+                to="/ai-assistant"
+                className="hidden sm:flex rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </Link>
+            ) : (
+              <button className="hidden sm:flex rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors">
+                <MessageSquare className="h-5 w-5" />
+              </button>
+            )}
             <Link
               to="/settings"
               className="hidden sm:flex rounded-full p-2 text-slate-500 hover:bg-slate-100 transition-colors"

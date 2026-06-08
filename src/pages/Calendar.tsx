@@ -157,7 +157,19 @@ export default function CalendarPage() {
     const fetch = async () => {
       setMyShiftsLoading(true);
       try {
-        const res = await api.get("/shifts/my-shifts/");
+        const past = new Date();
+        past.setDate(past.getDate() - 60);
+        const future = new Date();
+        future.setDate(future.getDate() + 120);
+        const fromStr = past.toISOString().split('T')[0];
+        const toStr = future.toISOString().split('T')[0];
+
+        const res = await api.get("/shifts/my-shifts/", {
+          params: {
+            from: fromStr,
+            to: toStr
+          }
+        });
         setMyShifts((res.data as any[]).map(transformShift));
       } catch {
         // fallback: filter from global shifts
