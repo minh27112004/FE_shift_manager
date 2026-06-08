@@ -157,12 +157,9 @@ export default function CalendarPage() {
     const fetch = async () => {
       setMyShiftsLoading(true);
       try {
-        const past = new Date();
-        past.setDate(past.getDate() - 60);
-        const future = new Date();
-        future.setDate(future.getDate() + 120);
-        const fromStr = past.toISOString().split('T')[0];
-        const toStr = future.toISOString().split('T')[0];
+        const fromStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
+        const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const toStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
         const res = await api.get("/shifts/my-shifts/", {
           params: {
@@ -191,7 +188,7 @@ export default function CalendarPage() {
       }
     };
     fetch();
-  }, [role, shifts]);
+  }, [role, shifts, viewYear, viewMonth, user?.id]);
 
   const days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
   const calendarData = buildCalendarDays(viewYear, viewMonth);

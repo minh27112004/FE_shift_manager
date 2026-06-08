@@ -39,17 +39,17 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
       if (from) {
         params.from = from;
       } else {
-        const past = new Date();
-        past.setDate(past.getDate() - 60);
-        params.from = past.toISOString().split('T')[0];
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        params.from = firstDay.toISOString().split('T')[0];
       }
 
       if (to) {
         params.to = to;
       } else {
-        const future = new Date();
-        future.setDate(future.getDate() + 120);
-        params.to = future.toISOString().split('T')[0];
+        const now = new Date();
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        params.to = lastDay.toISOString().split('T')[0];
       }
 
       const response = await api.get('/shifts/', { params });

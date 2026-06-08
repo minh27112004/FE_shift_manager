@@ -119,6 +119,7 @@ function AdminRegistration() {
   useEffect(() => {
     const claims: PendingClaim[] = [];
     shifts.forEach((s) => {
+      if (s.isPast) return; // Chỉ hiển thị các ca chưa diễn ra hoặc đang diễn ra để duyệt
       (s.backendData?.assignments ?? []).forEach((a: any) => {
         if (a.status === "pending") {
           claims.push({
