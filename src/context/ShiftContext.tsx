@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../lib/axios';
 import { useAuth } from './AuthContext';
 
@@ -31,21 +31,34 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated } = useAuth();
+  const currentRangeRef = useRef<{ from?: string; to?: string }>({});
+
   const fetchShifts = useCallback(async (from?: string, to?: string) => {
     if (!isAuthenticated) return;
     setIsLoading(true);
     try {
       const params: Record<string, string> = {};
-      if (from) {
-        params.from = from;
+      
+      let actualFrom = from;
+      let actualTo = to;
+      
+      if (!actualFrom && !actualTo) {
+        if (currentRangeRef.current.from && currentRangeRef.current.to) {
+          actualFrom = currentRangeRef.current.from;
+          actualTo = currentRangeRef.current.to;
+        }
+      }
+
+      if (actualFrom) {
+        params.from = actualFrom;
       } else {
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         params.from = firstDay.toISOString().split('T')[0];
       }
 
-      if (to) {
-        params.to = to;
+      if (actualTo) {
+        params.to = actualTo;
       } else {
         const now = new Date();
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -77,6 +90,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
         };
       });
       setShifts(formattedShifts);
+      currentRangeRef.current = { from: params.from, to: params.to };
     } catch (error) {
       console.error('Failed to fetch shifts:', error);
     } finally {

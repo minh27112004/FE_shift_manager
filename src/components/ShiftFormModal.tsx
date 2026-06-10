@@ -52,11 +52,35 @@ export function ShiftFormModal({ form, setForm, onSubmit, onClose, submitting, e
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [selectedTplId, setSelectedTplId] = useState<number | null>(null);
   const [stores, setStores] = useState<StoreOption[]>([]);
+  const [dateError, setDateError] = useState('');
+
+  const getLocalDateString = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getLocalDateString(new Date());
+  const tomorrowObj = new Date();
+  tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+  const tomorrowStr = getLocalDateString(tomorrowObj);
+
+  const validateDate = (dateVal: string, isEmergency: boolean) => {
+    if (!dateVal) { setDateError(''); return; }
+    if (!editMode && dateVal < todayStr) {
+      setDateError('Không thể chọn ngày trong quá khứ.');
+    } else if (isEmergency && dateVal > tomorrowStr) {
+      setDateError('Ca khẩn cấp chỉ được phép chọn ngày hôm nay hoặc ngày mai.');
+    } else {
+      setDateError('');
+    }
+  };
 
   useEffect(() => {
     api.get('/shifts/templates/')
       .then(r => setTemplates(r.data.filter((t: ShiftTemplate) => t.is_active)))
-      .catch(() => {});
+      .catch(() => { });
     api.get('/stores/')
       .then(r => {
         setStores(r.data);
@@ -65,7 +89,7 @@ export function ShiftFormModal({ form, setForm, onSubmit, onClose, submitting, e
           setForm(f => ({ ...f, store: r.data[0].id }));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const applyTemplate = (tpl: ShiftTemplate) => {
@@ -179,11 +203,25 @@ export function ShiftFormModal({ form, setForm, onSubmit, onClose, submitting, e
               <input
                 type="date"
                 value={form.date}
-                onChange={e => set('date', e.target.value)}
+                onChange={e => {
+                  set('date', e.target.value);
+                  validateDate(e.target.value, form.is_emergency);
+                }}
                 required
-                min={editMode ? undefined : new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-[#005ac2]/20 focus:border-[#005ac2]/40 focus:outline-none transition-colors"
+                min={editMode ? undefined : todayStr}
+                className={cn(
+                  'w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:outline-none transition-colors',
+                  dateError
+                    ? 'border-red-400 focus:ring-red-200 focus:border-red-400'
+                    : 'border-slate-200 focus:ring-[#005ac2]/20 focus:border-[#005ac2]/40'
+                )}
               />
+              {dateError && (
+                <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1">
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  {dateError}
+                </p>
+              )}
             </div>
 
             {/* Giờ */}
@@ -278,7 +316,11 @@ export function ShiftFormModal({ form, setForm, onSubmit, onClose, submitting, e
 
               <button
                 type="button"
-                onClick={() => setForm(f => ({ ...f, is_emergency: !f.is_emergency, salary_multiplier: !f.is_emergency ? '1.5' : '1.00' }))}
+                onClick={() => {
+                  const next = !form.is_emergency;
+                  setForm(f => ({ ...f, is_emergency: next, salary_multiplier: next ? '1.5' : '1.00' }));
+                  validateDate(form.date, next);
+                }}
                 className={cn(
                   'flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all',
                   form.is_emergency ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50 opacity-60'

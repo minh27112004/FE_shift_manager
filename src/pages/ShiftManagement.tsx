@@ -166,6 +166,24 @@ export default function ShiftManagement() {
       setFormError('Giờ kết thúc phải sau giờ bắt đầu.');
       return;
     }
+    if (form.is_emergency) {
+      const getLocalDateString = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const todayStr = getLocalDateString(new Date());
+      const tomorrowObj = new Date();
+      tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+      const tomorrowStr = getLocalDateString(tomorrowObj);
+
+      if (form.date !== todayStr && form.date !== tomorrowStr) {
+        setFormError('Ca khẩn cấp chỉ được phép chọn ngày hôm nay hoặc ngày mai.');
+        return;
+      }
+    }
     setSaving(true);
     try {
       const pad = (t: string) => t.length === 5 ? t + ':00' : t;

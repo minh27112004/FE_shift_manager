@@ -123,7 +123,7 @@ function transformShift(s: any) {
 }
 
 export default function CalendarPage() {
-  const { shifts, isLoading, addShift } = useShifts();
+  const { shifts, isLoading, fetchShifts, addShift } = useShifts();
   const { user } = useAuth();
   const role = user?.role || "employee";
 
@@ -189,6 +189,15 @@ export default function CalendarPage() {
     };
     fetch();
   }, [role, shifts, viewYear, viewMonth, user?.id]);
+
+  // Admin/Manager: fetch all shifts for the selected month/year
+  useEffect(() => {
+    if (role === "employee") return;
+    const fromStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const toStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    fetchShifts(fromStr, toStr);
+  }, [role, viewYear, viewMonth, fetchShifts]);
 
   const days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
   const calendarData = buildCalendarDays(viewYear, viewMonth);
@@ -356,7 +365,7 @@ export default function CalendarPage() {
                     className={cn(
                       "p-2 border-r border-b border-slate-100 transition-colors",
                       (cell.prevMonth || cell.nextMonth) &&
-                        "bg-slate-50/30 opacity-40",
+                      "bg-slate-50/30 opacity-40",
                       cell.today && "bg-[#005ac2]/5",
                     )}
                   >
@@ -386,15 +395,15 @@ export default function CalendarPage() {
                           className={cn(
                             "px-2 py-1 rounded-md text-xs font-bold border-l-4",
                             shift.type === "primary" &&
-                              "bg-[#d8e2ff]/40 text-[#004eaa] border-[#005ac2]",
+                            "bg-[#d8e2ff]/40 text-[#004eaa] border-[#005ac2]",
                             shift.type === "tertiary" &&
-                              "bg-[#d3ceef]/50 text-[#47445f] border-[#5f5c78]",
+                            "bg-[#d3ceef]/50 text-[#47445f] border-[#5f5c78]",
                             shift.type === "error" &&
-                              "bg-[#fe8983]/30 text-[#752121] border-[#9f403d]",
+                            "bg-[#fe8983]/30 text-[#752121] border-[#9f403d]",
                             role === "employee" &&
-                              "ring-2 ring-[#005ac2] ring-offset-1",
+                            "ring-2 ring-[#005ac2] ring-offset-1",
                             (role === "admin" || role === "manager") &&
-                              "cursor-pointer hover:brightness-95 transition-all",
+                            "cursor-pointer hover:brightness-95 transition-all",
                           )}
                         >
                           <div className="truncate">{shift.label}</div>
@@ -573,7 +582,7 @@ function TemplateManagerModal({ onClose }: { onClose: () => void }) {
     api
       .get("/shifts/templates/")
       .then((r) => setTemplates(r.data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   };
 
@@ -637,7 +646,7 @@ function TemplateManagerModal({ onClose }: { onClose: () => void }) {
     try {
       await api.delete(`/shifts/templates/${id}/`);
       fetchTemplates();
-    } catch {}
+    } catch { }
   };
 
   const inputCls =
@@ -881,7 +890,7 @@ function BulkShiftModal({
     api
       .get("/shifts/templates/")
       .then((r) => setTemplates(r.data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingTpl(false));
   }, []);
 
