@@ -39,12 +39,12 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
   const [openShiftsCount, setOpenShiftsCount] = useState<number | null>(null);
 
   useEffect(() => {
-    api.get('/employees/').then(r => setEmployeeCount(r.data.length)).catch(() => {});
+    api.get('/employees/').then(r => setEmployeeCount(r.data.length)).catch(() => { });
     api.get('/shifts/swap-requests/').then(r => {
       const pending = r.data.filter((s: any) => s.status === 'pending' || s.status === 'partner_accepted');
       setPendingSwaps(pending.length);
-    }).catch(() => {});
-    api.get('/attendance/records/today/').then(r => setTodayRecords(r.data)).catch(() => {});
+    }).catch(() => { });
+    api.get('/attendance/records/today/').then(r => setTodayRecords(r.data)).catch(() => { });
 
     // Lấy danh sách ca làm việc tháng này từ Backend để đếm ca trống
     const now = new Date();
@@ -56,7 +56,7 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
     api.get(`/shifts/?from=${fromDate}&to=${toDate}`).then(r => {
       const openShifts = r.data.filter((s: any) => s.is_open);
       setOpenShiftsCount(openShifts.length);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const todayStr = (() => {
@@ -104,7 +104,7 @@ function AdminDashboard({ shifts }: { shifts: any[] }) {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="p-4 sm:p-6 lg:p-8 pb-4"
@@ -291,13 +291,13 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
       const ongoing = records.find((rec: any) => rec.checkin_at && !rec.checkout_at);
       setActiveAttendance(ongoing ?? null);
       setCompletedShifts(records.filter((rec: any) => rec.checkin_at && rec.checkout_at).length);
-    }).catch(() => {});
+    }).catch(() => { });
 
     api.get('/payroll/my-estimate/').then(r => {
       setEstimatedIncome(Number(r.data.gross_amount));
-    }).catch(() => {});
+    }).catch(() => { });
 
-    api.get(`/shifts/my-shifts/?from=${todayStr}`).then(r => {
+    api.get(`/shifts/my-shifts/?from=${from}&to=${to}`).then(r => {
       const myShifts: any[] = r.data;
       setTotalRegistered(myShifts.length);
       const todayShifts = myShifts
@@ -310,7 +310,7 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
           type: s.is_emergency ? 'error' : 'tertiary',
         }));
       setUpcomingShifts(todayShifts);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [user]);
 
   const handleCheckOut = async () => {
@@ -372,7 +372,7 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="p-8 pb-12"
@@ -412,14 +412,14 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-extrabold tracking-tight text-slate-900">Ca làm hôm nay</h2>
-              <button 
+              <button
                 onClick={() => navigate('/calendar')}
                 className="text-[#005ac2] text-xs font-semibold hover:underline"
               >
                 Xem toàn bộ lịch
               </button>
             </div>
-            
+
             <div className="space-y-4">
               {upcomingShifts.length > 0 ? (
                 upcomingShifts.map((shift) => (
@@ -427,8 +427,8 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
                     <div className="flex items-center gap-4 mb-4 md:mb-0">
                       <div className={cn(
                         "p-3 rounded-xl border flex flex-col items-center justify-center min-w-[70px]",
-                        shift.type === 'primary' ? "bg-[#d8e2ff]/40 border-[#005ac2]/20 text-[#005ac2]" : 
-                        shift.type === 'tertiary' ? "bg-[#d3ceef]/30 border-[#5f5c78]/20 text-[#5f5c78]" : "bg-[#fe8983]/20 border-[#9f403d]/20 text-[#9f403d]"
+                        shift.type === 'primary' ? "bg-[#d8e2ff]/40 border-[#005ac2]/20 text-[#005ac2]" :
+                          shift.type === 'tertiary' ? "bg-[#d3ceef]/30 border-[#5f5c78]/20 text-[#5f5c78]" : "bg-[#fe8983]/20 border-[#9f403d]/20 text-[#9f403d]"
                       )}>
                         <span className="text-sm font-black">{new Date(shift.date).getDate()}</span>
                         <span className="text-xs uppercase font-bold tracking-widest">Tháng {new Date(shift.date).getMonth() + 1}</span>
@@ -447,7 +447,7 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
                 <div className="text-center py-8">
                   <Bed className="h-8 w-8 text-slate-200 mx-auto mb-3" />
                   <p className="text-slate-500 text-sm font-medium">Bạn không có ca làm nào sắp tới.</p>
-                  <button 
+                  <button
                     onClick={() => navigate('/calendar')}
                     className="mt-4 px-6 py-2 bg-[#005ac2] text-white font-bold rounded-lg text-sm hover:bg-[#004fab] transition-colors"
                   >
@@ -463,20 +463,20 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
         <aside>
           <div className="bg-gradient-to-br from-[#005ac2] to-[#5f5c78] rounded-xl shadow-lg p-6 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
-            
+
             <h2 className="text-base font-bold uppercase tracking-widest text-[#d8e2ff] mb-6 relative z-10">Thao tác nhanh</h2>
-            
+
             <div className="relative z-10 space-y-4">
               {activeAttendance ? (
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 mb-4">
-                   <div className="flex items-center justify-between mb-2">
-                     <span className="text-xs font-black uppercase tracking-widest text-blue-200">Đang thực hiện ca</span>
-                     <Timer className="h-4 w-4 text-green-400 animate-pulse" />
-                   </div>
-                   <p className="text-lg font-black tracking-tight">Bắt đầu lúc: {new Date(activeAttendance.checkin_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-widest text-blue-200">Đang thực hiện ca</span>
+                    <Timer className="h-4 w-4 text-green-400 animate-pulse" />
+                  </div>
+                  <p className="text-lg font-black tracking-tight">Bắt đầu lúc: {new Date(activeAttendance.checkin_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               ) : (
-                <button 
+                <button
                   onClick={() => navigate('/qr-scanner')}
                   className="w-full bg-white text-[#005ac2] hover:bg-slate-50 font-black tracking-tight py-4 px-6 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-3"
                 >
@@ -484,14 +484,14 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
                   QUÉT QR Check-in
                 </button>
               )}
-              
-              <button 
+
+              <button
                 onClick={handleCheckOut}
                 disabled={!activeAttendance}
                 className={cn(
                   "w-full font-black tracking-tight py-4 px-6 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-3",
-                  activeAttendance 
-                    ? "bg-red-500 text-white shadow-lg hover:bg-red-600" 
+                  activeAttendance
+                    ? "bg-red-500 text-white shadow-lg hover:bg-red-600"
                     : "bg-white/10 border border-white/20 text-white/50 cursor-not-allowed"
                 )}
               >
@@ -499,10 +499,10 @@ function EmployeeDashboard({ user }: { shifts: any[], user: any }) {
                 Kết thúc ca (Check-out)
               </button>
             </div>
-            
+
             <div className="mt-6 pt-4 border-t border-white/10 relative z-10">
               <p className="text-sm text-blue-200 font-medium">
-                {activeAttendance 
+                {activeAttendance
                   ? "Bạn đã ghi nhận check-in. Đừng quên bấm kết thúc ca khi hoàn thành công việc."
                   : "Hãy nhớ truy cập mạng WiFi nội bộ của cửa hàng trước khi thực hiện Check-in / Check-out."}
               </p>
